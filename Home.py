@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from streamlit_extras.app_logo import add_logo
 import os
 
 
@@ -9,9 +8,6 @@ st.set_page_config(
     page_title="Home",
     page_icon="🏠",
 )
-
-# Add the logo to the sidebar
-add_logo("logo.png", height=10)
 
 # Main content
 st.title("Welcome to Pharmalytics!")
