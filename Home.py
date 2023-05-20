@@ -32,7 +32,7 @@ if file:
     dataset = pd.read_csv(file, index_col=None)
     st.success("Dataset uploaded successfully!")
     st.write("**Dataset Preview:**")
-    st.dataframe(dataset)
+    st.dataframe(dataset, width=700)
 
     dataset.to_csv("uploaded_dataset.csv", index=None) # Save dataset to local machine
 
@@ -41,7 +41,8 @@ uploaded_dataset = None
 if os.path.exists("uploaded_dataset.csv"):
     uploaded_dataset = pd.read_csv("uploaded_dataset.csv", index_col=None)
 
-# Show the previously uploaded dataset
+# Show the previously uploaded dataset and drop unwanted columns
 if uploaded_dataset is not None and dataset is None:
-    st.write("**Previously Uploaded Dataset:**")
-    st.dataframe(uploaded_dataset)
+    uploaded_dataset.drop(['Unnamed: 5', 'Unnamed: 6', 'Unnamed: 7'], axis=1, inplace=True)
+    st.write("**Uploaded Dataset:**")
+    st.dataframe(uploaded_dataset, width=700)
