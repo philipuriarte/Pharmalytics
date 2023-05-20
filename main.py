@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from PIL import Image
+from PIL import Image as img
 
 
 with st.sidebar:
-    img = Image.open("logo.png")
-    st.image(img)
+    logo = img.open("logo.png")
+    st.image(logo)
     st.markdown("***")
     screen = st.radio("Navigation", ["Home", "Accounting Analytics", "Sales Predictions"])
     st.info("Pharmalytics is a sales prediction application developed for FirstMed Pharmacy.")
@@ -16,7 +16,7 @@ if screen == "Home":
     st.title("Home")
     file = st.file_uploader("Upload Pharmacy Sales Dataset")
     if file:
-        dataset = pd.read_csv(file)
+        dataset = pd.read_csv(file, index_col=None)
         st.write("Dataset Preview:")
         st.dataframe(dataset)
 
