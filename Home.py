@@ -20,7 +20,7 @@ st.markdown(
     Pharmalytics is a sales prediction system developed for FirstMed Pharmacy using the **SARIMA** model.
     ### Instructions
     1. Upload the pharmacy sales dataset below.
-    2.  👈 Select a Analytics or Predictions from the sidebar
+    2.  👈 Select Analytics or Predictions from the sidebar
         - To gain insights into the dataset, click on the "Analytics" option. 
         This will provide you with a comprehensive overview and analysis of the sales data, 
         including key statistics, trends, and visualizations.
