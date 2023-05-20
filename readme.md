@@ -1,3 +1,4 @@
+<br />
 <p align="center">
   <a>
     <img src="/readme-logo.png" width="400" alt="Pharmalytics Logo">
