@@ -1,8 +1,6 @@
-# Pharmalytics
-
 <p align="center">
   <a>
-    <img src="/logo.png" width="400" alt="Pharmalytics Logo">
+    <img src="/readme-logo.png" width="400" alt="Pharmalytics Logo">
   </a>
 </p>
 
