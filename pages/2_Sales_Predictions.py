@@ -10,5 +10,14 @@ st.set_page_config(
 
 # Main content
 st.title("Sales Predictions 💰")
-st.write("*option to open this screen will only show one a dataset file has been uploaded*")
-st.write("*will show sales predictions from trained SARIMA model*")
+st.markdown(
+    """
+    Pharmalitics uses the SARIMA model to generate sales predictions based on your uploaded dataset. 
+    This advanced technique captures seasonal and trend patterns in the data to forecast future trends.
+"""
+)
+
+st.write("Click the button below to generate sales predictions.")
+
+if st.button("Generate", help="Click to generate sales predictions"):
+    pass
