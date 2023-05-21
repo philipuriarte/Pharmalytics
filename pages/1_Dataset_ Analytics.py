@@ -98,43 +98,15 @@ with top_rev_chart_tab:
 
 
 st.subheader("Top Sales & Revenue Data Per Category")
-categories = [
-    "Adult Vitamins and Supplements",
-    "All Hypertension",
-    "All Medical Supplies",
-    "Anthelmintic",
-    "Anti Tb",
-    "Antibiotics",
-    "Antigout/hyperthyroids",
-    "Antihistamines",
-    "Antipsychotics",
-    "Antivertigo",
-    "Baby Products",
-    "Coffee Teas and Milks",
-    "Contraceptives",
-    "Cosmetics",
-    "Cream and Ointments",
-    "Drinks",
-    "Foods",
-    "Galenicals",
-    "Gastro Drugs",
-    "Herbal Medicines",
-    "Hygiene",
-    "Maintainance",
-    "Milk Supplements",
-    "Ob Products",
-    "Others",
-    "Otic/ophthalmic",
-    "Pain Relievers",
-    "Pedia Bottles",
-    "Respiratory"
-]
+
+# Get unique preduct names from the dataset
+categories = sorted(uploaded_dataset["Product Category"].unique())
 
 # Create a select box for selecting the category
 selected_category = st.selectbox("Select Category", categories)
 
 # Filter the dataset for the selected category
-category_data = uploaded_dataset[uploaded_dataset["Product Category"] == selected_category.upper()]
+category_data = uploaded_dataset[uploaded_dataset["Product Category"] == selected_category]
 
 # TABS for top 20 most sold products per category
 st.write("**Top 20 most sold products per category**")
@@ -203,8 +175,6 @@ st.subheader("Product Sales Trend Over Time: MULTISELECT")
 selected_products = st.multiselect("Select Products", product_names)
 
 # Filter the dataset for the selected products
-# for product in selected_products:
-#     products_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"] == product]
 products_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"].isin(selected_products)]
 
 # Convert the "Date Sold" column to datetime format
