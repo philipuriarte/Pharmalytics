@@ -21,7 +21,8 @@ st.markdown(
         This will provide you with a comprehensive overview and analysis of the sales data, 
         including key statistics, trends, and visualizations.
         - To generate sales predictions, click on "Predictions" option.
-        Pharmalitics will employ the SARIMA model to generate sales predictions based on the uploaded dataset.
+        Pharmalitics will employ the SARIMA (Seasonal Autoregressive Integrated Moving Average) model 
+        to generate sales predictions based on the uploaded dataset.
 """
 )
 
