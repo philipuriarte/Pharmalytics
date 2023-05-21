@@ -173,7 +173,7 @@ with cat_rev_chart_tab:
 st.subheader("Product Sales Trend Over Time")
 
 # Get unique preduct names from the dataset
-product_names = uploaded_dataset["Product Name"].unique()
+product_names = sorted(uploaded_dataset["Product Name"].unique())
 
 # Select box to choose a product
 selected_product = st.selectbox("Select a Product", product_names)
