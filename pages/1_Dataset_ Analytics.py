@@ -168,3 +168,55 @@ with cat_rev_data_tab:
 # Plot in bar graph
 with cat_rev_chart_tab:
     st.bar_chart(top_10_products_rev_cat, x="Product Name", y="Sell Price")
+
+
+st.subheader("Product Sales Trend Over Time")
+
+# Get unique preduct names from the dataset
+product_names = uploaded_dataset["Product Name"].unique()
+
+# Select box to choose a product
+selected_product = st.selectbox("Select a Product", product_names)
+
+# Filter the dataset for the selected product
+product_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"] == selected_product]
+
+# Convert the "Date Sold" column to datetime format
+product_sales_dataset["Date Sold"] = pd.to_datetime(product_sales_dataset["Date Sold"], dayfirst=True)
+
+# Create a new DataFrame with the dates as the index
+indexed_dataset = product_sales_dataset.set_index("Date Sold")
+
+# Resample the DataFrame to include missing dates with 0 sales
+resampled_dataset = indexed_dataset.resample("D").sum().fillna(0)
+
+# Sort the resampled dataset by date in ascending order
+resampled_dataset = resampled_dataset.sort_index()
+
+# Line graph of sales for the selected product
+st.line_chart(resampled_dataset["Quantity"])
+
+
+st.subheader("Product Sales Trend Over Time: MULTISELECT")
+
+# Multiselect box to choose products
+selected_products = st.multiselect("Select Products", product_names)
+
+# Filter the dataset for the selected products
+# for product in selected_products:
+#     products_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"] == product]
+products_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"].isin(selected_products)]
+
+# Convert the "Date Sold" column to datetime format
+products_sales_dataset["Date Sold"] = pd.to_datetime(products_sales_dataset["Date Sold"], dayfirst=True)
+
+# Create a new DataFrame with the dates as the index
+multi_indexed_dataset = products_sales_dataset.set_index("Date Sold")
+
+# Resample the DataFrame to include missing dates with 0 sales for each product
+resampled_datasets = []
+for product in selected_products:
+    multi_resampled_data = multi_indexed_dataset[multi_indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
+    resampled_datasets.append(multi_resampled_data)
+
+st.dataframe(products_sales_dataset)
