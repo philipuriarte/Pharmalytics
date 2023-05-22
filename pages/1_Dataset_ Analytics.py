@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import altair as alt
 import os
 
 # Set page title and icon
@@ -23,10 +24,10 @@ else:
     st.stop()
 
 # Drop unwanted columns
-uploaded_dataset.drop(['Unnamed: 5', 'Unnamed: 6', 'Unnamed: 7'], axis=1, inplace=True)
+uploaded_dataset.drop(["Unnamed: 5", "Unnamed: 6", "Unnamed: 7"], axis=1, inplace=True)
 
-# Replace all occurrences of '#REF!' with NaN (because of auto-fill category in Google Sheet)
-uploaded_dataset.replace('#REF!', np.nan, inplace=True)
+# Replace all occurrences of "#REF!" with NaN (because of auto-fill category in Google Sheet)
+uploaded_dataset.replace("#REF!", np.nan, inplace=True)
 
 # Drop all rows that contain NaN values (All rows that have a single NaN value will be dropped)
 uploaded_dataset.dropna(inplace=True)
@@ -49,8 +50,17 @@ with total_sales_data_tab:
     st.dataframe(quantity_df, width=400)
 
 with total_sales_chart_tab:
-    st.bar_chart(quantity_df, x="Product Name", y="Quantity")
-
+    # Sort the dataframe by the Quantity column in descending order
+    sorted_quantity_df = quantity_df.sort_values("Quantity", ascending=False)
+    # Create the Altair bar chart
+    quantity_alt_chart = alt.Chart(sorted_quantity_df).mark_bar().encode(
+        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+        y="Quantity"
+    ).properties(
+        title="Total Sales Per Product From Highest to Lowest"
+    )
+    # Render the chart using st.altair_chart
+    st.altair_chart(quantity_alt_chart, use_container_width=True)
 
 # TABS for total quantity of sales per product
 st.subheader("Total Revenue Per Product")
@@ -64,39 +74,57 @@ with total_rev_data_tab:
     st.dataframe(revenue_df)
 
 with total_rev_chart_tab:
-    st.bar_chart(revenue_df, x="Product Name", y="Sell Price")
+    # Sort the dataframe by the Sell Price column in descending order
+    sorted_rev_df = revenue_df.sort_values("Sell Price", ascending=False)
+    # Create the Altair bar chart
+    rev_alt_chart = alt.Chart(sorted_rev_df).mark_bar().encode(
+        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+        y="Sell Price"
+    ).properties(
+        title="Total Revenue Per Product From Highest to Lowest"
+    )
+    # Render the chart using st.altair_chart
+    st.altair_chart(rev_alt_chart, use_container_width=True)
 
 
 # TABS for top 30 most sold products
-st.subheader('Top 30 Most Sold Products')
+st.subheader("Top 30 Most Sold Products")
 top_sales_data_tab, top_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
 with top_sales_data_tab:
     # Get the top 30 most sold products
     top_30_products_sales = quantity_df.sort_values("Quantity", ascending=False).head(30).reset_index()
     top_30_products_sales.index += 1 # Start with index 1 instead 0
-    top_30_products_sales = top_30_products_sales.drop('index', axis=1) # Remove Index column
+    top_30_products_sales = top_30_products_sales.drop("index", axis=1) # Remove Index column
     st.dataframe(top_30_products_sales)
 
 # Plot in bar graph
 with top_sales_chart_tab:
-    st.bar_chart(top_30_products_sales, x="Product Name", y="Quantity")
+    top_sales_alt_chart = alt.Chart(top_30_products_sales).mark_bar().encode(
+        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+        y="Quantity"
+    )
+    st.altair_chart(top_sales_alt_chart, use_container_width=True)
 
 
 # TABS for top 30 products with highest revenue
-st.subheader('Top 30 Products With Highest Revenue')
+st.subheader("Top 30 Products With Highest Revenue")
 top_rev_data_tab, top_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
 with top_rev_data_tab:
     # Get the top 30 products with highest revenue
     top_30_products_rev = revenue_df.sort_values("Sell Price", ascending=False).head(30).reset_index()
     top_30_products_rev.index += 1 # Start with index 1 instead 0
-    top_30_products_rev = top_30_products_rev.drop('index', axis=1) # Remove Index column
+    top_30_products_rev = top_30_products_rev.drop("index", axis=1) # Remove Index column
     st.dataframe(top_30_products_rev)
 
 # Plot in bar graph
 with top_rev_chart_tab:
-    st.bar_chart(top_30_products_rev, x="Product Name", y="Sell Price")
+    top_rev_alt_chart = alt.Chart(top_30_products_rev).mark_bar().encode(
+        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+        y="Sell Price"
+    )
+    st.altair_chart(top_sales_alt_chart, use_container_width=True)
 
 
 st.subheader("Top Sales & Revenue Data Per Category")
@@ -124,7 +152,11 @@ with cat_sales_data_tab:
 
 # Plot in bar graph
 with cat_sales_chart_tab:
-    st.bar_chart(top_10_products_sales_cat, x="Product Name", y="Quantity")
+    top_sales_cat_alt_chart = alt.Chart(top_10_products_sales_cat).mark_bar().encode(
+        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+        y="Quantity"
+    )
+    st.altair_chart(top_sales_cat_alt_chart, use_container_width=True)
 
 
 # TABS for top 20 products with highest revenue per category
@@ -141,7 +173,11 @@ with cat_rev_data_tab:
 
 # Plot in bar graph
 with cat_rev_chart_tab:
-    st.bar_chart(top_10_products_rev_cat, x="Product Name", y="Sell Price")
+    top_rev_cat_alt_chart = alt.Chart(top_10_products_rev_cat).mark_bar().encode(
+        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+        y="Sell Price"
+    )
+    st.altair_chart(top_rev_cat_alt_chart, use_container_width=True)
 
 
 st.subheader("Product Sales Trend Over Time")

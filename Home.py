@@ -37,6 +37,8 @@ if file:
 
     dataset.to_csv("uploaded_dataset.csv", index=None) # Save dataset to local machine
 
+st.divider()
+
 # Load the previously uploaded dataset (if exists)
 uploaded_dataset = None
 if os.path.exists("uploaded_dataset.csv"):
