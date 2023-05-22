@@ -47,7 +47,7 @@ with total_sales_data_tab:
     quantity_per_product = uploaded_dataset.groupby(["Product Name"])["Quantity"].sum()
     # Convert the resulting series to a dataframe
     quantity_df = pd.DataFrame(quantity_per_product).reset_index()
-    st.dataframe(quantity_df, width=400)
+    st.dataframe(quantity_df)
 
 with total_sales_chart_tab:
     # Sort the dataframe by the Quantity column in descending order
@@ -61,6 +61,7 @@ with total_sales_chart_tab:
     )
     # Render the chart using st.altair_chart
     st.altair_chart(quantity_alt_chart, use_container_width=True)
+
 
 # TABS for total quantity of sales per product
 st.subheader("Total Revenue Per Product")
@@ -182,14 +183,14 @@ with cat_rev_chart_tab:
 
 st.subheader("Product Sales Trend Over Time")
 
-# Get unique preduct names from the dataset
+# Get unique product names from the dataset
 product_names = sorted(uploaded_dataset["Product Name"].unique())
 
-# Select box to choose a product
-selected_product = st.selectbox("Select a Product", product_names)
+# Multiselect box to choose products
+selected_products = st.multiselect("Select Products", product_names, max_selections=5)
 
-# Filter the dataset for the selected product
-product_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"] == selected_product]
+# Filter the dataset for the selected products
+product_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"].isin(selected_products)]
 
 # Convert the "Date Sold" column to datetime format
 product_sales_dataset["Date Sold"] = pd.to_datetime(product_sales_dataset["Date Sold"], dayfirst=True)
@@ -197,34 +198,33 @@ product_sales_dataset["Date Sold"] = pd.to_datetime(product_sales_dataset["Date 
 # Create a new DataFrame with the dates as the index
 indexed_dataset = product_sales_dataset.set_index("Date Sold")
 
-# Resample the DataFrame to include missing dates with 0 sales
-resampled_dataset = indexed_dataset.resample("D").sum().fillna(0)
-
-# Sort the resampled dataset by date in ascending order
-resampled_dataset = resampled_dataset.sort_index()
-
-# Line graph of sales for the selected product
-st.line_chart(resampled_dataset["Quantity"])
-
-
-st.subheader("Product Sales Trend Over Time: MULTISELECT")
-
-# Multiselect box to choose products
-selected_products = st.multiselect("Select Products", product_names)
-
-# Filter the dataset for the selected products
-products_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"].isin(selected_products)]
-
-# Convert the "Date Sold" column to datetime format
-products_sales_dataset["Date Sold"] = pd.to_datetime(products_sales_dataset["Date Sold"], dayfirst=True)
-
-# Create a new DataFrame with the dates as the index
-multi_indexed_dataset = products_sales_dataset.set_index("Date Sold")
-
 # Resample the DataFrame to include missing dates with 0 sales for each product
 resampled_datasets = []
 for product in selected_products:
-    multi_resampled_data = multi_indexed_dataset[multi_indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
+    multi_resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
+    multi_resampled_data["Product Name"] = product  # Add a column with the product name
     resampled_datasets.append(multi_resampled_data)
 
-st.dataframe(products_sales_dataset)
+if len(resampled_datasets) > 0:
+    # Concatenate the resampled datasets
+    combined_dataset = pd.concat(resampled_datasets)
+
+    # Sort the combined dataset by date in ascending order
+    combined_dataset = combined_dataset.sort_index().reset_index()
+
+    # Line chart of sales for the selected products
+    chart = alt.Chart(combined_dataset).mark_line().encode(
+        x="Date Sold:T",
+        y="Quantity:Q",
+        color="Product Name:N"
+    ).properties(
+        title={
+            "text": "Product Sales Trend Over Time",
+            "align": "center"
+        }
+    )
+
+    # Render the chart using st.altair_chart
+    st.altair_chart(chart, use_container_width=True)
+else:
+    st.warning("No data available for the selected products.")
