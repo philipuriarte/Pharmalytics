@@ -23,208 +23,218 @@ else:
     st.warning("Dataset not uploaded. Please upload a dataset first in the Home page.")
     st.stop()
 
+# Created containers to group codes together
+clean_con = st.container()
+total_sales_con = st.container()
+total_rev_con = st.container()
+top_sales_con = st.container()
+top_rev_con = st.container()
+top_cat_con = st.container()
+sales_trend_con = st.container()
+
+with clean_con:
 # Drop unwanted columns
-uploaded_dataset.drop(["Unnamed: 5", "Unnamed: 6", "Unnamed: 7"], axis=1, inplace=True)
+    uploaded_dataset.drop(["Unnamed: 5", "Unnamed: 6", "Unnamed: 7"], axis=1, inplace=True)
 
-# Replace all occurrences of "#REF!" with NaN (because of auto-fill category in Google Sheet)
-uploaded_dataset.replace("#REF!", np.nan, inplace=True)
+    # Replace all occurrences of "#REF!" with NaN (because of auto-fill category in Google Sheet)
+    uploaded_dataset.replace("#REF!", np.nan, inplace=True)
 
-# Drop all rows that contain NaN values (All rows that have a single NaN value will be dropped)
-uploaded_dataset.dropna(inplace=True)
+    # Drop all rows that contain NaN values (All rows that have a single NaN value will be dropped)
+    uploaded_dataset.dropna(inplace=True)
 
-# Show Cleaned Dataset
-st.subheader("Cleaned Dataset")
-st.write("All rows with at least 1 empty cell are removed in the uploaded dataset.")
-st.dataframe(uploaded_dataset, width=700)
+    # Show Cleaned Dataset
+    st.subheader("Cleaned Dataset")
+    st.write("All rows with at least 1 empty cell are removed in the uploaded dataset.")
+    st.dataframe(uploaded_dataset, width=700)
 
+with total_sales_con:
+    # TABS for total quantity of sales per product
+    st.subheader("Total Sales Per Product")
+    total_sales_data_tab, total_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
-# TABS for total quantity of sales per product
-st.subheader("Total Sales Per Product")
-total_sales_data_tab, total_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
+    with total_sales_data_tab:
+        # Group the dataframe by product name and get the sum of the quantity
+        quantity_per_product = uploaded_dataset.groupby(["Product Name"])["Quantity"].sum()
+        # Convert the resulting series to a dataframe
+        quantity_df = pd.DataFrame(quantity_per_product).reset_index()
+        st.dataframe(quantity_df)
 
-with total_sales_data_tab:
-    # Group the dataframe by product name and get the sum of the quantity
-    quantity_per_product = uploaded_dataset.groupby(["Product Name"])["Quantity"].sum()
-    # Convert the resulting series to a dataframe
-    quantity_df = pd.DataFrame(quantity_per_product).reset_index()
-    st.dataframe(quantity_df)
+    with total_sales_chart_tab:
+        # Sort the dataframe by the Quantity column in descending order
+        sorted_quantity_df = quantity_df.sort_values("Quantity", ascending=False)
+        # Create the Altair bar chart
+        quantity_alt_chart = alt.Chart(sorted_quantity_df).mark_bar().encode(
+            x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+            y="Quantity"
+        ).properties(
+            title="Total Sales Per Product From Highest to Lowest"
+        )
+        # Render the chart using st.altair_chart
+        st.altair_chart(quantity_alt_chart, use_container_width=True)
 
-with total_sales_chart_tab:
-    # Sort the dataframe by the Quantity column in descending order
-    sorted_quantity_df = quantity_df.sort_values("Quantity", ascending=False)
-    # Create the Altair bar chart
-    quantity_alt_chart = alt.Chart(sorted_quantity_df).mark_bar().encode(
-        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
-        y="Quantity"
-    ).properties(
-        title="Total Sales Per Product From Highest to Lowest"
-    )
-    # Render the chart using st.altair_chart
-    st.altair_chart(quantity_alt_chart, use_container_width=True)
+with total_rev_con:
+    # TABS for total quantity of sales per product
+    st.subheader("Total Revenue Per Product")
+    total_rev_data_tab, total_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
+    with total_rev_data_tab:
+        # Group the dataframe by product name and get the sum of the sell price
+        sell_price_per_product = uploaded_dataset.groupby(["Product Name"])["Sell Price"].sum()
+        # Convert the resulting series to a dataframe
+        revenue_df = pd.DataFrame(sell_price_per_product).reset_index()
+        st.dataframe(revenue_df)
 
-# TABS for total quantity of sales per product
-st.subheader("Total Revenue Per Product")
-total_rev_data_tab, total_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
+    with total_rev_chart_tab:
+        # Sort the dataframe by the Sell Price column in descending order
+        sorted_rev_df = revenue_df.sort_values("Sell Price", ascending=False)
+        # Create the Altair bar chart
+        rev_alt_chart = alt.Chart(sorted_rev_df).mark_bar().encode(
+            x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+            y="Sell Price"
+        ).properties(
+            title="Total Revenue Per Product From Highest to Lowest"
+        )
+        # Render the chart using st.altair_chart
+        st.altair_chart(rev_alt_chart, use_container_width=True)
 
-with total_rev_data_tab:
-    # Group the dataframe by product name and get the sum of the sell price
-    sell_price_per_product = uploaded_dataset.groupby(["Product Name"])["Sell Price"].sum()
-    # Convert the resulting series to a dataframe
-    revenue_df = pd.DataFrame(sell_price_per_product).reset_index()
-    st.dataframe(revenue_df)
+with top_sales_con:
+    # TABS for top 30 most sold products
+    st.subheader("Top 30 Most Sold Products")
+    top_sales_data_tab, top_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
-with total_rev_chart_tab:
-    # Sort the dataframe by the Sell Price column in descending order
-    sorted_rev_df = revenue_df.sort_values("Sell Price", ascending=False)
-    # Create the Altair bar chart
-    rev_alt_chart = alt.Chart(sorted_rev_df).mark_bar().encode(
-        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
-        y="Sell Price"
-    ).properties(
-        title="Total Revenue Per Product From Highest to Lowest"
-    )
-    # Render the chart using st.altair_chart
-    st.altair_chart(rev_alt_chart, use_container_width=True)
+    with top_sales_data_tab:
+        # Get the top 30 most sold products
+        top_30_products_sales = quantity_df.sort_values("Quantity", ascending=False).head(30).reset_index()
+        top_30_products_sales.index += 1 # Start with index 1 instead 0
+        top_30_products_sales = top_30_products_sales.drop("index", axis=1) # Remove Index column
+        st.dataframe(top_30_products_sales)
 
+    # Plot in bar graph
+    with top_sales_chart_tab:
+        top_sales_alt_chart = alt.Chart(top_30_products_sales).mark_bar().encode(
+            x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+            y="Quantity"
+        )
+        st.altair_chart(top_sales_alt_chart, use_container_width=True)
 
-# TABS for top 30 most sold products
-st.subheader("Top 30 Most Sold Products")
-top_sales_data_tab, top_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
+with top_rev_con:
+    # TABS for top 30 products with highest revenue
+    st.subheader("Top 30 Products With Highest Revenue")
+    top_rev_data_tab, top_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
-with top_sales_data_tab:
-    # Get the top 30 most sold products
-    top_30_products_sales = quantity_df.sort_values("Quantity", ascending=False).head(30).reset_index()
-    top_30_products_sales.index += 1 # Start with index 1 instead 0
-    top_30_products_sales = top_30_products_sales.drop("index", axis=1) # Remove Index column
-    st.dataframe(top_30_products_sales)
+    with top_rev_data_tab:
+        # Get the top 30 products with highest revenue
+        top_30_products_rev = revenue_df.sort_values("Sell Price", ascending=False).head(30).reset_index()
+        top_30_products_rev.index += 1 # Start with index 1 instead 0
+        top_30_products_rev = top_30_products_rev.drop("index", axis=1) # Remove Index column
+        st.dataframe(top_30_products_rev)
 
-# Plot in bar graph
-with top_sales_chart_tab:
-    top_sales_alt_chart = alt.Chart(top_30_products_sales).mark_bar().encode(
-        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
-        y="Quantity"
-    )
-    st.altair_chart(top_sales_alt_chart, use_container_width=True)
+    # Plot in bar graph
+    with top_rev_chart_tab:
+        top_rev_alt_chart = alt.Chart(top_30_products_rev).mark_bar().encode(
+            x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+            y="Sell Price"
+        )
+        st.altair_chart(top_sales_alt_chart, use_container_width=True)
 
+with top_cat_con:
+    st.subheader("Top Sales & Revenue Data Per Category")
 
-# TABS for top 30 products with highest revenue
-st.subheader("Top 30 Products With Highest Revenue")
-top_rev_data_tab, top_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
+    # Get unique preduct names from the dataset
+    categories = sorted(uploaded_dataset["Product Category"].unique())
 
-with top_rev_data_tab:
-    # Get the top 30 products with highest revenue
-    top_30_products_rev = revenue_df.sort_values("Sell Price", ascending=False).head(30).reset_index()
-    top_30_products_rev.index += 1 # Start with index 1 instead 0
-    top_30_products_rev = top_30_products_rev.drop("index", axis=1) # Remove Index column
-    st.dataframe(top_30_products_rev)
+    # Create a select box for selecting the category
+    selected_category = st.selectbox("Select Category", categories)
 
-# Plot in bar graph
-with top_rev_chart_tab:
-    top_rev_alt_chart = alt.Chart(top_30_products_rev).mark_bar().encode(
-        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
-        y="Sell Price"
-    )
-    st.altair_chart(top_sales_alt_chart, use_container_width=True)
+    # Filter the dataset for the selected category
+    category_data = uploaded_dataset[uploaded_dataset["Product Category"] == selected_category]
 
+    # TABS for top 20 most sold products per category
+    st.write("**Top 20 most sold products per category**")
+    cat_sales_data_tab, cat_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
-st.subheader("Top Sales & Revenue Data Per Category")
+    with cat_sales_data_tab:
+        # Group the filtered dataset by product name and get the sum of the quantity
+        quantity_per_product_cat = category_data.groupby("Product Name")["Quantity"].sum()
+        # Sort the quantity per product in descending order and get the top 20
+        top_10_products_sales_cat = quantity_per_product_cat.sort_values(ascending=False).head(20).reset_index()
+        top_10_products_sales_cat.index += 1 # Start with index 1 instead 0
+        st.dataframe(top_10_products_sales_cat)
 
-# Get unique preduct names from the dataset
-categories = sorted(uploaded_dataset["Product Category"].unique())
+    # Plot in bar graph
+    with cat_sales_chart_tab:
+        top_sales_cat_alt_chart = alt.Chart(top_10_products_sales_cat).mark_bar().encode(
+            x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+            y="Quantity"
+        )
+        st.altair_chart(top_sales_cat_alt_chart, use_container_width=True)
 
-# Create a select box for selecting the category
-selected_category = st.selectbox("Select Category", categories)
+    # TABS for top 20 products with highest revenue per category
+    st.write("**Top 20 products with highest revenue per category**")
+    cat_rev_data_tab, cat_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
-# Filter the dataset for the selected category
-category_data = uploaded_dataset[uploaded_dataset["Product Category"] == selected_category]
+    with cat_rev_data_tab:
+        # Group the filtered dataset by product name and get the sum of the quantity
+        quantity_per_product_cat = category_data.groupby("Product Name")["Sell Price"].sum()
+        # Sort the quantity per product in descending order and get the top 20
+        top_10_products_rev_cat = quantity_per_product_cat.sort_values(ascending=False).head(20).reset_index()
+        top_10_products_rev_cat.index += 1 # Start with index 1 instead 0
+        st.dataframe(top_10_products_rev_cat)
 
-# TABS for top 20 most sold products per category
-st.write("**Top 20 most sold products per category**")
-cat_sales_data_tab, cat_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
+    # Plot in bar graph
+    with cat_rev_chart_tab:
+        top_rev_cat_alt_chart = alt.Chart(top_10_products_rev_cat).mark_bar().encode(
+            x=alt.X("Product Name", sort=None),  # Disable automatic sorting
+            y="Sell Price"
+        )
+        st.altair_chart(top_rev_cat_alt_chart, use_container_width=True)
 
-with cat_sales_data_tab:
-    # Group the filtered dataset by product name and get the sum of the quantity
-    quantity_per_product_cat = category_data.groupby("Product Name")["Quantity"].sum()
-    # Sort the quantity per product in descending order and get the top 20
-    top_10_products_sales_cat = quantity_per_product_cat.sort_values(ascending=False).head(20).reset_index()
-    top_10_products_sales_cat.index += 1 # Start with index 1 instead 0
-    st.dataframe(top_10_products_sales_cat)
+with sales_trend_con:
+    st.subheader("Product Sales Trend Over Time")
 
-# Plot in bar graph
-with cat_sales_chart_tab:
-    top_sales_cat_alt_chart = alt.Chart(top_10_products_sales_cat).mark_bar().encode(
-        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
-        y="Quantity"
-    )
-    st.altair_chart(top_sales_cat_alt_chart, use_container_width=True)
+    # Get unique product names from the dataset
+    product_names = sorted(uploaded_dataset["Product Name"].unique())
 
+    # Multiselect box to choose products
+    selected_products = st.multiselect("Select Products", product_names, max_selections=5)
 
-# TABS for top 20 products with highest revenue per category
-st.write("**Top 20 products with highest revenue per category**")
-cat_rev_data_tab, cat_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
+    # Filter the dataset for the selected products
+    product_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"].isin(selected_products)]
 
-with cat_rev_data_tab:
-    # Group the filtered dataset by product name and get the sum of the quantity
-    quantity_per_product_cat = category_data.groupby("Product Name")["Sell Price"].sum()
-    # Sort the quantity per product in descending order and get the top 20
-    top_10_products_rev_cat = quantity_per_product_cat.sort_values(ascending=False).head(20).reset_index()
-    top_10_products_rev_cat.index += 1 # Start with index 1 instead 0
-    st.dataframe(top_10_products_rev_cat)
+    # Convert the "Date Sold" column to datetime format
+    product_sales_dataset["Date Sold"] = pd.to_datetime(product_sales_dataset["Date Sold"], dayfirst=True)
 
-# Plot in bar graph
-with cat_rev_chart_tab:
-    top_rev_cat_alt_chart = alt.Chart(top_10_products_rev_cat).mark_bar().encode(
-        x=alt.X("Product Name", sort=None),  # Disable automatic sorting
-        y="Sell Price"
-    )
-    st.altair_chart(top_rev_cat_alt_chart, use_container_width=True)
+    # Create a new DataFrame with the dates as the index
+    indexed_dataset = product_sales_dataset.set_index("Date Sold")
 
+    # Resample the DataFrame to include missing dates with 0 sales for each product
+    resampled_datasets = []
+    for product in selected_products:
+        multi_resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
+        multi_resampled_data["Product Name"] = product  # Add a column with the product name
+        resampled_datasets.append(multi_resampled_data)
 
-st.subheader("Product Sales Trend Over Time")
+    if len(resampled_datasets) > 0:
+        # Concatenate the resampled datasets
+        combined_dataset = pd.concat(resampled_datasets)
 
-# Get unique product names from the dataset
-product_names = sorted(uploaded_dataset["Product Name"].unique())
+        # Sort the combined dataset by date in ascending order
+        combined_dataset = combined_dataset.sort_index().reset_index()
 
-# Multiselect box to choose products
-selected_products = st.multiselect("Select Products", product_names, max_selections=5)
+        # Line chart of sales for the selected products
+        chart = alt.Chart(combined_dataset).mark_line().encode(
+            x="Date Sold:T",
+            y="Quantity:Q",
+            color="Product Name:N"
+        ).properties(
+            title={
+                "text": "Product Sales Trend Over Time",
+                "align": "center"
+            }
+        )
 
-# Filter the dataset for the selected products
-product_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"].isin(selected_products)]
+        # Render the chart using st.altair_chart
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.warning("No data available for the selected products.")
 
-# Convert the "Date Sold" column to datetime format
-product_sales_dataset["Date Sold"] = pd.to_datetime(product_sales_dataset["Date Sold"], dayfirst=True)
-
-# Create a new DataFrame with the dates as the index
-indexed_dataset = product_sales_dataset.set_index("Date Sold")
-
-# Resample the DataFrame to include missing dates with 0 sales for each product
-resampled_datasets = []
-for product in selected_products:
-    multi_resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
-    multi_resampled_data["Product Name"] = product  # Add a column with the product name
-    resampled_datasets.append(multi_resampled_data)
-
-if len(resampled_datasets) > 0:
-    # Concatenate the resampled datasets
-    combined_dataset = pd.concat(resampled_datasets)
-
-    # Sort the combined dataset by date in ascending order
-    combined_dataset = combined_dataset.sort_index().reset_index()
-
-    # Line chart of sales for the selected products
-    chart = alt.Chart(combined_dataset).mark_line().encode(
-        x="Date Sold:T",
-        y="Quantity:Q",
-        color="Product Name:N"
-    ).properties(
-        title={
-            "text": "Product Sales Trend Over Time",
-            "align": "center"
-        }
-    )
-
-    # Render the chart using st.altair_chart
-    st.altair_chart(chart, use_container_width=True)
-else:
-    st.warning("No data available for the selected products.")
