@@ -198,6 +198,9 @@ with sales_trend_con:
     # Multiselect box to choose products
     selected_products = st.multiselect("Select Products", product_names, max_selections=5)
 
+    # Radio buttons to choose the time interval
+    time_interval = st.radio("Select Time Interval", ["Daily", "Weekly", "Monthly"])
+
     # Filter the dataset for the selected products
     product_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"].isin(selected_products)]
 
@@ -207,12 +210,17 @@ with sales_trend_con:
     # Create a new DataFrame with the dates as the index
     indexed_dataset = product_sales_dataset.set_index("Date Sold")
 
-    # Resample the DataFrame to include missing dates with 0 sales for each product
+    # Resample the DataFrame based on the selected time interval
     resampled_datasets = []
     for product in selected_products:
-        multi_resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
-        multi_resampled_data["Product Name"] = product  # Add a column with the product name
-        resampled_datasets.append(multi_resampled_data)
+        if time_interval == "Daily":
+            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
+        elif time_interval == "Weekly":
+            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("W").sum().fillna(0)
+        elif time_interval == "Monthly":
+            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("M").sum().fillna(0)
+        resampled_data["Product Name"] = product  # Add a column with the product name
+        resampled_datasets.append(resampled_data)
 
     if len(resampled_datasets) > 0:
         # Concatenate the resampled datasets
