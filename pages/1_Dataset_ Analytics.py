@@ -14,14 +14,16 @@ st.sidebar.header("Dataset Analytics")
 # Main content
 st.title("Dataset Analytics 📈")
 
-# Load the previously uploaded dataset (if exists)
+# Load the previously uploaded dataset and stop if dataset doesn't exist
 uploaded_dataset = None
 if os.path.exists("uploaded_dataset.csv"):
     uploaded_dataset = pd.read_csv("uploaded_dataset.csv", index_col=None)
+else:
+    st.warning("Dataset not uploaded. Please upload a dataset first in the Home page.")
+    st.stop()
 
 # Drop unwanted columns
-if uploaded_dataset is not None:
-    uploaded_dataset.drop(['Unnamed: 5', 'Unnamed: 6', 'Unnamed: 7'], axis=1, inplace=True)
+uploaded_dataset.drop(['Unnamed: 5', 'Unnamed: 6', 'Unnamed: 7'], axis=1, inplace=True)
 
 # Replace all occurrences of '#REF!' with NaN (because of auto-fill category in Google Sheet)
 uploaded_dataset.replace('#REF!', np.nan, inplace=True)
