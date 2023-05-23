@@ -29,12 +29,12 @@ total_sales_con = st.container()
 total_rev_con = st.container()
 top_sales_con = st.container()
 top_rev_con = st.container()
-top_cat_con = st.container()
 sales_trend_con = st.container()
+top_cat_con = st.container()
 cat_rank_con = st.container()
 
 with clean_con:
-# Drop unwanted columns
+    # Drop unwanted columns
     uploaded_dataset.drop(["Unnamed: 5", "Unnamed: 6", "Unnamed: 7"], axis=1, inplace=True)
 
     # Replace all occurrences of "#REF!" with NaN (because of auto-fill category in Google Sheet)
@@ -43,10 +43,13 @@ with clean_con:
     # Drop all rows that contain NaN values (All rows that have a single NaN value will be dropped)
     uploaded_dataset.dropna(inplace=True)
 
+    uploaded_dataset = uploaded_dataset.reset_index()
+    cleaned_dataset = uploaded_dataset.drop("index", axis=1)
+
     # Show Cleaned Dataset
     st.subheader("Cleaned Dataset")
     st.write("All rows with at least 1 empty cell are removed in the uploaded dataset.")
-    st.dataframe(uploaded_dataset, width=700)
+    st.dataframe(cleaned_dataset, width=700)
 
 with total_sales_con:
     # TABS for total quantity of sales per product
@@ -55,7 +58,7 @@ with total_sales_con:
 
     with total_sales_data_tab:
         # Group the dataframe by product name and get the sum of the quantity
-        quantity_per_product = uploaded_dataset.groupby(["Product Name"])["Quantity"].sum()
+        quantity_per_product = cleaned_dataset.groupby(["Product Name"])["Quantity"].sum()
         # Convert the resulting series to a dataframe
         quantity_df = pd.DataFrame(quantity_per_product).reset_index()
         st.dataframe(quantity_df)
@@ -80,7 +83,7 @@ with total_rev_con:
 
     with total_rev_data_tab:
         # Group the dataframe by product name and get the sum of the sell price
-        sell_price_per_product = uploaded_dataset.groupby(["Product Name"])["Sell Price"].sum()
+        sell_price_per_product = cleaned_dataset.groupby(["Product Name"])["Sell Price"].sum()
         # Convert the resulting series to a dataframe
         revenue_df = pd.DataFrame(sell_price_per_product).reset_index()
         st.dataframe(revenue_df)
@@ -138,17 +141,92 @@ with top_rev_con:
         )
         st.altair_chart(top_sales_alt_chart, use_container_width=True)
 
+with sales_trend_con:
+    st.subheader("Product Sales Trend Over Time")
+
+    # Get unique product names from the dataset
+    product_names = sorted(cleaned_dataset["Product Name"].unique())
+
+    # Multiselect box to choose products
+    selected_products = st.multiselect("Select Products", product_names, max_selections=5)
+
+    # Radio buttons to choose the time interval
+    time_interval = st.radio("Select Time Interval", ["Daily", "Weekly", "Monthly"])
+
+    # Filter the dataset for the selected products
+    product_sales_dataset = cleaned_dataset[cleaned_dataset["Product Name"].isin(selected_products)]
+
+    # Convert the "Date Sold" column to datetime format
+    product_sales_dataset["Date Sold"] = pd.to_datetime(product_sales_dataset["Date Sold"], format="%m/%d/%Y")
+
+    # Create a new DataFrame with the dates as the index
+    indexed_dataset = product_sales_dataset.set_index("Date Sold")
+
+    # Resample the DataFrame based on the selected time interval
+    resampled_datasets = []
+    for product in selected_products:
+        if time_interval == "Daily":
+            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
+            date_range = pd.date_range(start=resampled_data.index.min(), end=resampled_data.index.max(), freq="D")
+        elif time_interval == "Weekly":
+            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("W-MON").sum().fillna(0)
+            date_range = pd.date_range(start=resampled_data.index.min(), end=resampled_data.index.max(), freq="W-MON")
+        elif time_interval == "Monthly":
+            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("M").sum().fillna(0)
+            date_range = pd.date_range(start=resampled_data.index.min(), end=resampled_data.index.max(), freq="M")
+        resampled_data = resampled_data.drop("Product Category", axis=1)  # Remove the "Product Categories" column
+        resampled_data["Product Name"] = product  # Add a column with the product name
+        resampled_datasets.append(resampled_data)
+
+    if len(resampled_datasets) > 0:
+        # Concatenate the resampled datasets
+        combined_dataset = pd.concat(resampled_datasets)
+
+        # Sort the combined dataset by date in ascending order
+        combined_dataset = combined_dataset.sort_index().reset_index()
+
+        # Expand the combined dataset to include all dates in the range
+        expanded_datasets = []
+        for product in selected_products:
+            product_data = combined_dataset[combined_dataset["Product Name"] == product]
+            expanded_data = pd.DataFrame(data=date_range, columns=["Date Sold"])
+            expanded_data = expanded_data.merge(product_data, on="Date Sold", how="left").fillna(0)
+            expanded_data["Product Name"] = product
+            expanded_datasets.append(expanded_data)
+
+        expanded_dataset = pd.concat(expanded_datasets)
+
+        # Line chart of sales for the selected products
+        chart = alt.Chart(expanded_dataset).mark_line().encode(
+            x=alt.X("Date Sold:T", axis=alt.Axis(format="%b %d, %Y")),  # Format x-axis to display month, day, year
+            y="Quantity:Q",
+            color="Product Name:N",
+            tooltip=["Date Sold:T", "Product Name:N", "Quantity:Q"]  # Include date, product name, and quantity in tooltip
+        ).properties(
+            title={
+                "text": "Product Sales Trend Over Time",
+                "align": "center"
+            }
+        )
+
+        # Render the chart using st.altair_chart
+        st.altair_chart(chart, use_container_width=True)
+        st.write("Issue encountered with appending the categories. Should be removed instead.")
+        st.dataframe(expanded_dataset)
+    else:
+        st.warning("No data available for the selected products.")
+
 with top_cat_con:
     st.subheader("Top Sales & Revenue Data Per Category")
 
     # Get unique preduct names from the dataset
-    categories = sorted(uploaded_dataset["Product Category"].unique())
+    categories = sorted(cleaned_dataset["Product Category"].unique())
 
     # Create a select box for selecting the category
     selected_category = st.selectbox("Select Category", categories)
 
     # Filter the dataset for the selected category
-    category_data = uploaded_dataset[uploaded_dataset["Product Category"] == selected_category]
+    category_data = cleaned_dataset[cleaned_dataset["Product Category"] == selected_category]
 
     # TABS for top 20 most sold products per category
     st.write("**Top 20 most sold products per category**")
@@ -190,70 +268,13 @@ with top_cat_con:
         )
         st.altair_chart(top_rev_cat_alt_chart, use_container_width=True)
 
-with sales_trend_con:
-    st.subheader("Product Sales Trend Over Time")
-
-    # Get unique product names from the dataset
-    product_names = sorted(uploaded_dataset["Product Name"].unique())
-
-    # Multiselect box to choose products
-    selected_products = st.multiselect("Select Products", product_names, max_selections=5)
-
-    # Radio buttons to choose the time interval
-    time_interval = st.radio("Select Time Interval", ["Daily", "Weekly", "Monthly"])
-
-    # Filter the dataset for the selected products
-    product_sales_dataset = uploaded_dataset[uploaded_dataset["Product Name"].isin(selected_products)]
-
-    # Convert the "Date Sold" column to datetime format
-    product_sales_dataset["Date Sold"] = pd.to_datetime(product_sales_dataset["Date Sold"], dayfirst=True)
-
-    # Create a new DataFrame with the dates as the index
-    indexed_dataset = product_sales_dataset.set_index("Date Sold")
-
-    # Resample the DataFrame based on the selected time interval
-    resampled_datasets = []
-    for product in selected_products:
-        if time_interval == "Daily":
-            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
-        elif time_interval == "Weekly":
-            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("W").sum().fillna(0)
-        elif time_interval == "Monthly":
-            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("M").sum().fillna(0)
-        resampled_data["Product Name"] = product  # Add a column with the product name
-        resampled_datasets.append(resampled_data)
-
-    if len(resampled_datasets) > 0:
-        # Concatenate the resampled datasets
-        combined_dataset = pd.concat(resampled_datasets)
-
-        # Sort the combined dataset by date in ascending order
-        combined_dataset = combined_dataset.sort_index().reset_index()
-
-        # Line chart of sales for the selected products
-        chart = alt.Chart(combined_dataset).mark_line().encode(
-            x="Date Sold:T",
-            y="Quantity:Q",
-            color="Product Name:N"
-        ).properties(
-            title={
-                "text": "Product Sales Trend Over Time",
-                "align": "center"
-            }
-        )
-
-        # Render the chart using st.altair_chart
-        st.altair_chart(chart, use_container_width=True)
-    else:
-        st.warning("No data available for the selected products.")
-
 with cat_rank_con:
     # TABS for top 30 most sold products
     st.subheader("Category Sales Ranking")
     cat_rank_data_tab, cat_rank_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
     with cat_rank_data_tab:
-        category_sales = uploaded_dataset.groupby("Product Category")["Quantity"].sum().reset_index()
+        category_sales = cleaned_dataset.groupby("Product Category")["Quantity"].sum().reset_index()
         category_sales = category_sales.sort_values("Quantity", ascending=False).reset_index()
         category_sales.index += 1
         category_sales = category_sales.drop("index", axis=1)
