@@ -162,18 +162,22 @@ with sales_trend_con:
     # Create a new DataFrame with the dates as the index
     indexed_dataset = product_sales_dataset.set_index("Date Sold")
 
+    # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
+    min_date = pd.Timestamp(product_sales_dataset["Date Sold"].min().date().replace(day=1))
+    max_date = product_sales_dataset["Date Sold"].max().date() + pd.offsets.MonthEnd(0)
+
     # Resample the DataFrame based on the selected time interval
     resampled_datasets = []
     for product in selected_products:
         if time_interval == "Daily":
             resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
-            date_range = pd.date_range(start=resampled_data.index.min(), end=resampled_data.index.max(), freq="D")
+            date_range = pd.date_range(start=min_date, end=max_date, freq="D")
         elif time_interval == "Weekly":
             resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("W-MON").sum().fillna(0)
-            date_range = pd.date_range(start=resampled_data.index.min(), end=resampled_data.index.max(), freq="W-MON")
+            date_range = pd.date_range(start=min_date, end=max_date, freq="W-MON")
         elif time_interval == "Monthly":
             resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("M").sum().fillna(0)
-            date_range = pd.date_range(start=resampled_data.index.min(), end=resampled_data.index.max(), freq="M")
+            date_range = pd.date_range(start=min_date - pd.DateOffset(months=1), end=max_date, freq="M")
         resampled_data = resampled_data.drop("Product Category", axis=1)  # Remove the "Product Categories" column
         resampled_data["Product Name"] = product  # Add a column with the product name
         resampled_datasets.append(resampled_data)
@@ -211,8 +215,8 @@ with sales_trend_con:
 
         # Render the chart using st.altair_chart
         st.altair_chart(chart, use_container_width=True)
-        
-        # Render Dataframe for extra information
+
+        st.write("Render Dataframe for extra information in testing")
         st.dataframe(expanded_dataset)
     else:
         st.warning("No data available for the selected products.")
