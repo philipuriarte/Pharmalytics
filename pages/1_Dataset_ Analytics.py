@@ -31,6 +31,7 @@ top_sales_con = st.container()
 top_rev_con = st.container()
 top_cat_con = st.container()
 sales_trend_con = st.container()
+cat_rank_con = st.container()
 
 with clean_con:
 # Drop unwanted columns
@@ -246,3 +247,22 @@ with sales_trend_con:
     else:
         st.warning("No data available for the selected products.")
 
+with cat_rank_con:
+    # TABS for top 30 most sold products
+    st.subheader("Category Sales Ranking")
+    cat_rank_data_tab, cat_rank_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
+
+    with cat_rank_data_tab:
+        category_sales = uploaded_dataset.groupby("Product Category")["Quantity"].sum().reset_index()
+        category_sales = category_sales.sort_values("Quantity", ascending=False).reset_index()
+        category_sales.index += 1
+        category_sales = category_sales.drop("index", axis=1)
+        st.dataframe(category_sales)
+
+    # Plot in bar graph
+    with cat_rank_chart_tab:
+        cat_rank_alt_chart = alt.Chart(category_sales).mark_bar().encode(
+            x=alt.X("Category Name", sort=None),  # Disable automatic sorting
+            y="Quantity"
+        )
+    st.altair_chart(top_sales_alt_chart, use_container_width=True)
