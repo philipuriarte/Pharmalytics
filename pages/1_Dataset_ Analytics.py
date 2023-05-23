@@ -211,7 +211,8 @@ with sales_trend_con:
 
         # Render the chart using st.altair_chart
         st.altair_chart(chart, use_container_width=True)
-        st.write("Issue encountered with appending the categories. Should be removed instead.")
+        
+        # Render Dataframe for extra information
         st.dataframe(expanded_dataset)
     else:
         st.warning("No data available for the selected products.")
