@@ -265,4 +265,4 @@ with cat_rank_con:
             x=alt.X("Category Name", sort=None),  # Disable automatic sorting
             y="Quantity"
         )
-    st.altair_chart(top_sales_alt_chart, use_container_width=True)
+        st.altair_chart(top_sales_alt_chart, use_container_width=True)
