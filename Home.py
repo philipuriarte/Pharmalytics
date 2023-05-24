@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import os
 
 
@@ -30,22 +31,55 @@ st.markdown(
 dataset = None
 file = st.file_uploader("Upload Sales Dataset")
 if file:
-    dataset = pd.read_csv(file, index_col=None)
+    dataset = pd.read_csv(file, index_col=False)
     st.success("Dataset uploaded successfully!")
     st.write("**Dataset Preview:**")
     st.dataframe(dataset, width=700)
 
     dataset.to_csv("uploaded_dataset.csv", index=None) # Save dataset to local machine
+elif not os.path.exists("uploaded_dataset.csv") and not file:
+    st.stop()
+
+# Load the previously uploaded dataset (if exists)
+if os.path.exists("uploaded_dataset.csv") and not file:
+    dataset = pd.read_csv("uploaded_dataset.csv", index_col=None)
+    st.write("**Uploaded Dataset:**")
+    st.dataframe(dataset, width=700)
 
 st.divider()
 
-# Load the previously uploaded dataset (if exists)
-uploaded_dataset = None
-if os.path.exists("uploaded_dataset.csv"):
-    uploaded_dataset = pd.read_csv("uploaded_dataset.csv", index_col=None)
+# Create containers to group codes together
+pre_con = st.container()
 
-# Show the previously uploaded dataset and drop unwanted columns
-if uploaded_dataset is not None and dataset is None:
-    uploaded_dataset.drop(['Unnamed: 5', 'Unnamed: 6', 'Unnamed: 7'], axis=1, inplace=True)
-    st.write("**Uploaded Dataset:**")
-    st.dataframe(uploaded_dataset, width=700)
+with pre_con:
+    # Drop the unnamed columns
+    unnamed_columns = [col for col in dataset.columns if 'Unnamed' in col]
+    dataset.drop(unnamed_columns, axis=1, inplace=True)
+
+    # Replace all occurrences of "#REF!" with NaN (because of auto-fill category in Google Sheet)
+    dataset.replace("#REF!", np.nan, inplace=True)
+
+    # Drop all rows that contain NaN values (All rows that have a single NaN value will be dropped)
+    dataset.dropna(inplace=True)
+
+    cleaned_dataset = dataset.reset_index(drop=True)
+
+    st.subheader("Data Pre-processing")
+
+    # Show Cleaned Dataset
+    st.write("**Data Cleaning**")
+    st.write("Rows with empty cells and unnecessary rows are removed from the uploaded dataset.")
+    st.dataframe(cleaned_dataset, width=700)
+
+    # Convert the "Date Sold" column to datetime format
+    cleaned_dataset["Date Sold"] = pd.to_datetime(cleaned_dataset["Date Sold"], format="%m/%d/%Y")
+
+    # Create a new DataFrame with the dates as the index
+    indexed_dataset = cleaned_dataset.set_index("Date Sold")
+
+    # Show DateTime index converted Dataset
+    st.write("**Dataset with DateTime Index**")
+    st.write("Display the data with a datetime index, enabling analysis and tracking of trends over time.")
+    st.dataframe(indexed_dataset, width=700)
+
+    indexed_dataset.to_csv("preprocessed_dataset.csv", index=None) # Save preprocessed dataset to local machine
