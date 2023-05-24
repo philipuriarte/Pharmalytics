@@ -64,22 +64,21 @@ with pre_con:
 
     cleaned_dataset = dataset.reset_index(drop=True)
 
-    st.subheader("Data Pre-processing")
-
-    # Show Cleaned Dataset
-    st.write("**Data Cleaning**")
-    st.write("Rows with empty cells and unnecessary rows are removed from the uploaded dataset.")
-    st.dataframe(cleaned_dataset, width=700)
-
     # Convert the "Date Sold" column to datetime format
     cleaned_dataset["Date Sold"] = pd.to_datetime(cleaned_dataset["Date Sold"], format="%m/%d/%Y")
 
     # Create a new DataFrame with the dates as the index
     indexed_dataset = cleaned_dataset.set_index("Date Sold")
 
-    # Show DateTime index converted Dataset
-    st.write("**Dataset with DateTime Index**")
-    st.write("Display the data with a datetime index, enabling analysis and tracking of trends over time.")
+    # Show Preprocessed Dataset
+    st.subheader("Data Pre-processing")
+    st.markdown(
+        """
+        1. **Data Cleaning**: Rows with empty cells and unnecessary rows are removed from the uploaded dataset.
+        2. **Set DateTime Index**: Display the data with a datetime index, enabling analysis and tracking of trends over time.
+    """
+    )
+    st.write("**Preprocessed Dataset**")
     st.dataframe(indexed_dataset, width=700)
 
-    indexed_dataset.to_csv("preprocessed_dataset.csv", index=None) # Save preprocessed dataset to local machine
+    indexed_dataset.to_csv("preprocessed_dataset.csv", date_format="%m/%d/%Y") # Save preprocessed dataset to local machine
