@@ -19,7 +19,6 @@ st.title("Dataset Analytics 📈")
 preprocessed_dataset = None
 if os.path.exists("preprocessed_dataset.csv"):
     preprocessed_dataset = pd.read_csv("preprocessed_dataset.csv", parse_dates=["Date Sold"], index_col="Date Sold")
-    preprocessed_dataset
 else:
     st.warning("Dataset not uploaded. Please upload a dataset first in the Home page.")
     st.stop()
@@ -137,7 +136,6 @@ with sales_trend_con:
 
     # Filter the dataset for the selected products
     product_sales_dataset = preprocessed_dataset[preprocessed_dataset["Product Name"].isin(selected_products)]
-    product_sales_dataset
 
     # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
     min_date = pd.Timestamp(preprocessed_dataset.index.min().date().replace(day=1))
@@ -266,7 +264,7 @@ with cat_rank_con:
     # Plot in bar graph
     with cat_rank_chart_tab:
         cat_rank_alt_chart = alt.Chart(category_sales).mark_bar().encode(
-            x=alt.X("Category Name", sort=None),  # Disable automatic sorting
+            x=alt.X("Product Category", sort=None),  # Disable automatic sorting
             y="Quantity"
         )
-        st.altair_chart(top_sales_alt_chart, use_container_width=True)
+        st.altair_chart(cat_rank_alt_chart, use_container_width=True)
