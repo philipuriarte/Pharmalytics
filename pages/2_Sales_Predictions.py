@@ -32,7 +32,6 @@ if not os.path.exists(preprocessed_dataset_path):
 
 preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date Sold"], index_col="Date Sold")
 
-
 # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
 min_date = pd.Timestamp(preprocessed_dataset.index.min().date().replace(day=1))
 max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)
@@ -85,9 +84,8 @@ non_stationary_count = adf_results_df['Is Non-Stationary'].sum()
 ratio_non_stationary = non_stationary_count / len(adf_results_df)
 
 # Output the counts and ratio
-st.write("Non-Stationary Products:", non_stationary_count)
-st.write("Total Products:", len(adf_results_df))
-st.write("Ratio of Non-Stationary Products:", ratio_non_stationary)
+st.write("Non-stationary products out of total:", non_stationary_count, "/", len(adf_results_df))
+st.write("Ratio of non-stationary products:", ratio_non_stationary)
 
 
 # Subheader for Product Sales Predictions
