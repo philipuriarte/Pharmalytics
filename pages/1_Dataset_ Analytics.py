@@ -15,16 +15,16 @@ st.sidebar.header("Dataset Analytics")
 # Main content
 st.title("Dataset Analytics 📈")
 
-# Load the previously uploaded dataset and stop if dataset doesn't exist
-uploaded_dataset = None
-if os.path.exists("uploaded_dataset.csv"):
-    uploaded_dataset = pd.read_csv("uploaded_dataset.csv", index_col=None)
+# Load the preprocessed dataset and stop if doesn't exist
+preprocessed_dataset = None
+if os.path.exists("preprocessed_dataset.csv"):
+    preprocessed_dataset = pd.read_csv("preprocessed_dataset.csv", parse_dates=["Date Sold"], index_col="Date Sold")
+    preprocessed_dataset
 else:
     st.warning("Dataset not uploaded. Please upload a dataset first in the Home page.")
     st.stop()
 
-# Created containers to group codes together
-clean_con = st.container()
+# Create containers to group codes together
 total_sales_con = st.container()
 total_rev_con = st.container()
 top_sales_con = st.container()
@@ -33,24 +33,6 @@ sales_trend_con = st.container()
 top_cat_con = st.container()
 cat_rank_con = st.container()
 
-with clean_con:
-    # Drop unwanted columns
-    uploaded_dataset.drop(["Unnamed: 5", "Unnamed: 6", "Unnamed: 7"], axis=1, inplace=True)
-
-    # Replace all occurrences of "#REF!" with NaN (because of auto-fill category in Google Sheet)
-    uploaded_dataset.replace("#REF!", np.nan, inplace=True)
-
-    # Drop all rows that contain NaN values (All rows that have a single NaN value will be dropped)
-    uploaded_dataset.dropna(inplace=True)
-
-    uploaded_dataset = uploaded_dataset.reset_index()
-    cleaned_dataset = uploaded_dataset.drop("index", axis=1)
-
-    # Show Cleaned Dataset
-    st.subheader("Cleaned Dataset")
-    st.write("All rows with at least 1 empty cell are removed in the uploaded dataset.")
-    st.dataframe(cleaned_dataset, width=700)
-
 with total_sales_con:
     # TABS for total quantity of sales per product
     st.subheader("Total Sales Per Product")
@@ -58,7 +40,7 @@ with total_sales_con:
 
     with total_sales_data_tab:
         # Group the dataframe by product name and get the sum of the quantity
-        quantity_per_product = cleaned_dataset.groupby(["Product Name"])["Quantity"].sum()
+        quantity_per_product = preprocessed_dataset.groupby(["Product Name"])["Quantity"].sum()
         # Convert the resulting series to a dataframe
         quantity_df = pd.DataFrame(quantity_per_product).reset_index()
         st.dataframe(quantity_df)
@@ -83,7 +65,7 @@ with total_rev_con:
 
     with total_rev_data_tab:
         # Group the dataframe by product name and get the sum of the sell price
-        sell_price_per_product = cleaned_dataset.groupby(["Product Name"])["Sell Price"].sum()
+        sell_price_per_product = preprocessed_dataset.groupby(["Product Name"])["Sell Price"].sum()
         # Convert the resulting series to a dataframe
         revenue_df = pd.DataFrame(sell_price_per_product).reset_index()
         st.dataframe(revenue_df)
@@ -145,7 +127,7 @@ with sales_trend_con:
     st.subheader("Product Sales Trend Over Time")
 
     # Get unique product names from the dataset
-    product_names = sorted(cleaned_dataset["Product Name"].unique())
+    product_names = sorted(preprocessed_dataset["Product Name"].unique())
 
     # Multiselect box to choose products
     selected_products = st.multiselect("Select Products", product_names, max_selections=5)
@@ -154,30 +136,26 @@ with sales_trend_con:
     time_interval = st.radio("Select Time Interval", ["Daily", "Weekly", "Monthly"])
 
     # Filter the dataset for the selected products
-    product_sales_dataset = cleaned_dataset[cleaned_dataset["Product Name"].isin(selected_products)]
-
-    # Convert the "Date Sold" column to datetime format
-    product_sales_dataset["Date Sold"] = pd.to_datetime(product_sales_dataset["Date Sold"], format="%m/%d/%Y")
-
-    # Create a new DataFrame with the dates as the index
-    indexed_dataset = product_sales_dataset.set_index("Date Sold")
+    product_sales_dataset = preprocessed_dataset[preprocessed_dataset["Product Name"].isin(selected_products)]
+    product_sales_dataset
 
     # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
-    min_date = pd.Timestamp(product_sales_dataset["Date Sold"].min().date().replace(day=1))
-    max_date = product_sales_dataset["Date Sold"].max().date() + pd.offsets.MonthEnd(0)
+    min_date = pd.Timestamp(preprocessed_dataset.index.min().date().replace(day=1))
+    max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)
+    st.write(min_date, max_date)
 
     # Resample the DataFrame based on the selected time interval
     resampled_datasets = []
     for product in selected_products:
         if time_interval == "Daily":
-            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("D").sum().fillna(0)
+            resampled_data = product_sales_dataset[product_sales_dataset["Product Name"] == product].resample("D").sum().fillna(0)
             date_range = pd.date_range(start=min_date, end=max_date, freq="D")
         elif time_interval == "Weekly":
-            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("W-MON").sum().fillna(0)
+            resampled_data = product_sales_dataset[product_sales_dataset["Product Name"] == product].resample("W-MON").sum().fillna(0)
             date_range = pd.date_range(start=min_date, end=max_date, freq="W-MON")
         elif time_interval == "Monthly":
-            resampled_data = indexed_dataset[indexed_dataset["Product Name"] == product].resample("M").sum().fillna(0)
-            date_range = pd.date_range(start=min_date - pd.DateOffset(months=1), end=max_date, freq="M")
+            resampled_data = product_sales_dataset[product_sales_dataset["Product Name"] == product].resample("M").sum().fillna(0)
+            date_range = pd.date_range(start=min_date - pd.DateOffset(months=2), end=max_date + pd.DateOffset(months=2), freq="M")
         resampled_data = resampled_data.drop("Product Category", axis=1)  # Remove the "Product Categories" column
         resampled_data["Product Name"] = product  # Add a column with the product name
         resampled_datasets.append(resampled_data)
@@ -225,13 +203,13 @@ with top_cat_con:
     st.subheader("Top Sales & Revenue Data Per Category")
 
     # Get unique preduct names from the dataset
-    categories = sorted(cleaned_dataset["Product Category"].unique())
+    categories = sorted(preprocessed_dataset["Product Category"].unique())
 
     # Create a select box for selecting the category
     selected_category = st.selectbox("Select Category", categories)
 
     # Filter the dataset for the selected category
-    category_data = cleaned_dataset[cleaned_dataset["Product Category"] == selected_category]
+    category_data = preprocessed_dataset[preprocessed_dataset["Product Category"] == selected_category]
 
     # TABS for top 20 most sold products per category
     st.write("**Top 20 most sold products per category**")
@@ -279,7 +257,7 @@ with cat_rank_con:
     cat_rank_data_tab, cat_rank_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
     with cat_rank_data_tab:
-        category_sales = cleaned_dataset.groupby("Product Category")["Quantity"].sum().reset_index()
+        category_sales = preprocessed_dataset.groupby("Product Category")["Quantity"].sum().reset_index()
         category_sales = category_sales.sort_values("Quantity", ascending=False).reset_index()
         category_sales.index += 1
         category_sales = category_sales.drop("index", axis=1)
