@@ -24,25 +24,14 @@ st.markdown(
 """
 )
 
-# Load the preprocessed dataset and stop if doesn't exist
-preprocessed_dataset = None
-if os.path.exists("preprocessed_dataset.csv"):
-    preprocessed_dataset = pd.read_csv("preprocessed_dataset.csv", parse_dates=["Date Sold"], index_col="Date Sold")
-else:
+# Load the preprocessed dataset and stop if it doesn't exist
+preprocessed_dataset_path = "preprocessed_dataset.csv"
+if not os.path.exists(preprocessed_dataset_path):
     st.warning("Dataset not uploaded. Please upload a dataset first in the Home page.")
     st.stop()
 
-# Subheader for Product Sales Predictions
-st.subheader("Product Sales Predictions")
+preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date Sold"], index_col="Date Sold")
 
-# Get unique product names from the dataset
-product_names = sorted(preprocessed_dataset["Product Name"].unique())
-
-# Multiselect box to choose products
-selected_products = st.multiselect("Select Products", product_names, max_selections=5)
-
-# Filter the dataset for the selected products
-product_sales_dataset = preprocessed_dataset[preprocessed_dataset["Product Name"].isin(selected_products)]
 
 # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
 min_date = pd.Timestamp(preprocessed_dataset.index.min().date().replace(day=1))
@@ -50,6 +39,65 @@ max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)
 
 # Create a date range from min_date to max_date
 date_range = pd.date_range(start=min_date, end=max_date, freq="W-MON")
+
+# Create an empty list to store the ADF test results
+adf_results = []
+
+# Get unique product names from the dataset
+product_names = sorted(preprocessed_dataset["Product Name"].unique())
+
+# Iterate through each product
+for product in product_names:
+    product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product]
+    resampled_data = product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample("W-MON").sum().reindex(date_range, fill_value=0).reset_index()
+    resampled_data = resampled_data.set_index("index")
+
+    # Perform the ADF test
+    adf_result = adfuller(resampled_data['Quantity'])
+    
+    # Calculate total sales
+    total_sales = product_data['Quantity'].sum()
+    
+    # Determine if sales are non-stationary
+    is_non_stationary = adf_result[1] > 0.05
+    
+    # Append the result to the list
+    adf_results.append({
+        'Product': product,
+        'Total Sales': total_sales,
+        'ADF Statistic': adf_result[0],
+        'p-value': adf_result[1],
+        'Critical Values': adf_result[4],
+        'Is Non-Stationary': is_non_stationary
+    })
+
+# Convert the list to a DataFrame
+adf_results_df = pd.DataFrame(adf_results)
+
+# Output the DataFrame
+st.subheader("Dataset Augmented Dickey-Fuller Test Results")
+st.dataframe(adf_results_df)
+
+# Count the non-stationary products
+non_stationary_count = adf_results_df['Is Non-Stationary'].sum()
+
+# Calculate the ratio of non-stationary products to the total number of products
+ratio_non_stationary = non_stationary_count / len(adf_results_df)
+
+# Output the counts and ratio
+st.write("Non-Stationary Products:", non_stationary_count)
+st.write("Total Products:", len(adf_results_df))
+st.write("Ratio of Non-Stationary Products:", ratio_non_stationary)
+
+
+# Subheader for Product Sales Predictions
+st.subheader("Product Sales Predictions")
+
+# Multiselect box to choose products
+selected_products = st.multiselect("Select Products", product_names, max_selections=5)
+
+# Filter the dataset for the selected products
+product_sales_dataset = preprocessed_dataset[preprocessed_dataset["Product Name"].isin(selected_products)]
 
 # Resample and preprocess the data for each selected product
 resampled_datasets = {}
@@ -91,12 +139,12 @@ for product in selected_products:
         plt.subplots_adjust(hspace=0.4)
         
         # Plot the ACF
-        plot_acf(resampled_datasets[product]['Quantity'], ax=ax2)
+        plot_acf(resampled_datasets[product]['Quantity'], ax=ax2, lags=25)
         ax2.set_xlabel("Lag")
         ax2.set_ylabel("Autocorrelation")
 
         # Plot the PACF
-        plot_pacf(resampled_datasets[product]['Quantity'], ax=ax3, lags=10)
+        plot_pacf(resampled_datasets[product]['Quantity'], ax=ax3, lags=12)
         ax3.set_xlabel("Lag")
         ax3.set_ylabel("Partial Autocorrelation")
 
