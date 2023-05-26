@@ -24,6 +24,8 @@ st.markdown(
 """
 )
 
+st.sidebar.header("Sales Predictions")
+
 # Load the preprocessed dataset and stop if it doesn't exist
 preprocessed_dataset_path = "preprocessed_dataset.csv"
 if not os.path.exists(preprocessed_dataset_path):
@@ -32,6 +34,9 @@ if not os.path.exists(preprocessed_dataset_path):
 
 preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date Sold"], index_col="Date Sold")
 
+# Create containers to group codes together
+top_30_products_adf_con = st.container()
+
 # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
 min_date = pd.Timestamp(preprocessed_dataset.index.min().date().replace(day=1))
 max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)
@@ -39,126 +44,174 @@ max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)
 # Create a date range from min_date to max_date
 date_range = pd.date_range(start=min_date, end=max_date, freq="W-MON")
 
-# Create an empty list to store the ADF test results
-adf_results = []
+with top_30_products_adf_con:
+    # Create an empty list to store the ADF test results
+    adf_results = []
 
-# Get unique product names from the dataset
-product_names = sorted(preprocessed_dataset["Product Name"].unique())
+    # Get the top 30 most sold products
+    top_30_products = preprocessed_dataset.groupby("Product Name")["Quantity"].sum().nlargest(30).index
 
-# Iterate through each product
-for product in product_names:
-    product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product]
-    resampled_data = product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample("W-MON").sum().reindex(date_range, fill_value=0).reset_index()
-    resampled_data = resampled_data.set_index("index")
+    # Iterate through each product
+    for product in top_30_products:
+        product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product]
+        resampled_data = product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample("W-MON").sum().reindex(date_range, fill_value=0).reset_index()
+        resampled_data = resampled_data.set_index("index")
 
-    # Perform the ADF test
-    adf_result = adfuller(resampled_data['Quantity'])
-    
-    # Calculate total sales
-    total_sales = product_data['Quantity'].sum()
-    
-    # Determine if sales are non-stationary
-    is_non_stationary = adf_result[1] > 0.05
-    
-    # Append the result to the list
-    adf_results.append({
-        'Product': product,
-        'Total Sales': total_sales,
-        'ADF Statistic': adf_result[0],
-        'p-value': adf_result[1],
-        'Critical Values': adf_result[4],
-        'Is Non-Stationary': is_non_stationary
-    })
-
-# Convert the list to a DataFrame
-adf_results_df = pd.DataFrame(adf_results)
-
-# Output the DataFrame
-st.subheader("Dataset Augmented Dickey-Fuller Test Results")
-st.dataframe(adf_results_df)
-
-# Count the non-stationary products
-non_stationary_count = adf_results_df['Is Non-Stationary'].sum()
-
-# Calculate the ratio of non-stationary products to the total number of products
-ratio_non_stationary = non_stationary_count / len(adf_results_df)
-
-# Output the counts and ratio
-st.write("Non-stationary products out of total:", non_stationary_count, "/", len(adf_results_df))
-st.write("Ratio of non-stationary products:", ratio_non_stationary)
-
-
-# Subheader for Product Sales Predictions
-st.subheader("Product Sales Predictions")
-
-# Multiselect box to choose products
-selected_products = st.multiselect("Select Products", product_names, max_selections=5)
-
-# Filter the dataset for the selected products
-product_sales_dataset = preprocessed_dataset[preprocessed_dataset["Product Name"].isin(selected_products)]
-
-# Resample and preprocess the data for each selected product
-resampled_datasets = {}
-for product in selected_products:
-    product_data = product_sales_dataset[product_sales_dataset["Product Name"] == product]
-
-    # Resample the data on a daily basis and fill missing dates with zero quantities
-    resampled_data = product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample("W-MON").sum().reindex(date_range, fill_value=0).reset_index()
-    resampled_data = resampled_data.set_index("index")  # Set "index" as the index (was previously "Date Sold")
-
-    resampled_datasets[product] = resampled_data
-
-    # Create two columns for the dataframe and plots
-    col1, col2, col3 = st.columns(3)
-
-    # Display the dataframe in the first column
-    with col1:
-        st.write("Dataset for", product)
-        st.dataframe(resampled_datasets[product])
-
-        # Calculate and display the sum of quantity
-        quantity_sum = resampled_datasets[product]['Quantity'].sum()
-        st.write("Sum of Quantity:", quantity_sum)
-
-    # Display the time series plot and ACF plot in the second column
-    with col2:
-        st.write("Time Series Plot and ACF for", product)
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 10))
+        # Perform the ADF test
+        adf_result = adfuller(resampled_data['Quantity'])
         
-        # Plot the time series
-        ax1.plot(resampled_datasets[product].index, resampled_datasets[product]['Quantity'])
-        ax1.set_xlabel("Date")
-        ax1.set_ylabel("Quantity")
-
-        # Add some spacing between the plots
-        ax1.margins(x=0, y=0.1)
-        ax2.margins(x=0, y=0.1)
-        ax3.margins(x=0, y=0.1)
-        plt.subplots_adjust(hspace=0.4)
+        # Calculate total sales
+        total_sales = product_data['Quantity'].sum()
         
-        # Plot the ACF
-        plot_acf(resampled_datasets[product]['Quantity'], ax=ax2, lags=25)
-        ax2.set_xlabel("Lag")
-        ax2.set_ylabel("Autocorrelation")
+        # Determine if sales are non-stationary
+        is_non_stationary = adf_result[1] > 0.05
+        
+        # Append the result to the list
+        adf_results.append({
+            'Product': product,
+            'Total Sales': total_sales,
+            'ADF Statistic': adf_result[0],
+            'p-value': adf_result[1],
+            'Critical Values': adf_result[4],
+            'Is Non-Stationary': is_non_stationary
+        })
 
-        # Plot the PACF
-        plot_pacf(resampled_datasets[product]['Quantity'], ax=ax3, lags=12)
-        ax3.set_xlabel("Lag")
-        ax3.set_ylabel("Partial Autocorrelation")
+    # Convert the list to a DataFrame
+    adf_results_df = pd.DataFrame(adf_results)
+    adf_results_df.index += 1
 
-        st.pyplot(fig)
+    # Output the DataFrame
+    st.subheader("Top 30 Most Sold Products ADF Test Results")
+    st.dataframe(adf_results_df)
+
+    # Count the non-stationary products
+    non_stationary_count = adf_results_df['Is Non-Stationary'].sum()
+
+    # Calculate the ratio of non-stationary products to the total number of products
+    ratio_non_stationary = non_stationary_count / len(adf_results_df)
+
+    # Output the counts and ratio
+    st.write("Non-stationary products out of total:", non_stationary_count, "/", len(adf_results_df))
+    st.write("Ratio of non-stationary products:", ratio_non_stationary)
+
+
+# # Get unique product names from the dataset
+# product_names = sorted(preprocessed_dataset["Product Name"].unique())
+
+# # Iterate through each product
+# for product in product_names:
+#     product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product]
+#     resampled_data = product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample("W-MON").sum().reindex(date_range, fill_value=0).reset_index()
+#     resampled_data = resampled_data.set_index("index")
+
+#     # Perform the ADF test
+#     adf_result = adfuller(resampled_data['Quantity'])
     
-    # Display the ADF test results in the third column
-    with col3:
-        adf_result = adfuller(resampled_datasets[product]['Quantity'])
-        st.write("Augmented Dickey-Fuller Test Results:")
-        st.write("ADF Statistic:", adf_result[0])
-        st.write("p-value:", adf_result[1])
-        st.write("Critical Values:")
-        for key, value in adf_result[4].items():
-            st.write(f"{key}: {value}")
+#     # Calculate total sales
+#     total_sales = product_data['Quantity'].sum()
+    
+#     # Determine if sales are non-stationary
+#     is_non_stationary = adf_result[1] > 0.05
+    
+#     # Append the result to the list
+#     adf_results.append({
+#         'Product': product,
+#         'Total Sales': total_sales,
+#         'ADF Statistic': adf_result[0],
+#         'p-value': adf_result[1],
+#         'Critical Values': adf_result[4],
+#         'Is Non-Stationary': is_non_stationary
+#     })
 
-st.divider()
+# # Convert the list to a DataFrame
+# adf_results_df = pd.DataFrame(adf_results)
+
+# # Output the DataFrame
+# st.subheader("Dataset Augmented Dickey-Fuller Test Results")
+# st.dataframe(adf_results_df)
+
+# # Count the non-stationary products
+# non_stationary_count = adf_results_df['Is Non-Stationary'].sum()
+
+# # Calculate the ratio of non-stationary products to the total number of products
+# ratio_non_stationary = non_stationary_count / len(adf_results_df)
+
+# # Output the counts and ratio
+# st.write("Non-stationary products out of total:", non_stationary_count, "/", len(adf_results_df))
+# st.write("Ratio of non-stationary products:", ratio_non_stationary)
+
+
+# # Subheader for Product Sales Predictions
+# st.subheader("Product Sales Predictions")
+
+# # Multiselect box to choose products
+# selected_products = st.multiselect("Select Products", product_names, max_selections=5)
+
+# # Filter the dataset for the selected products
+# product_sales_dataset = preprocessed_dataset[preprocessed_dataset["Product Name"].isin(selected_products)]
+
+# # Resample and preprocess the data for each selected product
+# resampled_datasets = {}
+# for product in selected_products:
+#     product_data = product_sales_dataset[product_sales_dataset["Product Name"] == product]
+
+#     # Resample the data on a daily basis and fill missing dates with zero quantities
+#     resampled_data = product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample("W-MON").sum().reindex(date_range, fill_value=0).reset_index()
+#     resampled_data = resampled_data.set_index("index")  # Set "index" as the index (was previously "Date Sold")
+
+#     resampled_datasets[product] = resampled_data
+
+#     # Create two columns for the dataframe and plots
+#     col1, col2, col3 = st.columns(3)
+
+#     # Display the dataframe in the first column
+#     with col1:
+#         st.write("Dataset for", product)
+#         st.dataframe(resampled_datasets[product])
+
+#         # Calculate and display the sum of quantity
+#         quantity_sum = resampled_datasets[product]['Quantity'].sum()
+#         st.write("Sum of Quantity:", quantity_sum)
+
+#     # Display the time series plot and ACF plot in the second column
+#     with col2:
+#         st.write("Time Series Plot and ACF for", product)
+#         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 10))
+        
+#         # Plot the time series
+#         ax1.plot(resampled_datasets[product].index, resampled_datasets[product]['Quantity'])
+#         ax1.set_xlabel("Date")
+#         ax1.set_ylabel("Quantity")
+
+#         # Add some spacing between the plots
+#         ax1.margins(x=0, y=0.1)
+#         ax2.margins(x=0, y=0.1)
+#         ax3.margins(x=0, y=0.1)
+#         plt.subplots_adjust(hspace=0.4)
+        
+#         # Plot the ACF
+#         plot_acf(resampled_datasets[product]['Quantity'], ax=ax2, lags=25)
+#         ax2.set_xlabel("Lag")
+#         ax2.set_ylabel("Autocorrelation")
+
+#         # Plot the PACF
+#         plot_pacf(resampled_datasets[product]['Quantity'], ax=ax3, lags=12)
+#         ax3.set_xlabel("Lag")
+#         ax3.set_ylabel("Partial Autocorrelation")
+
+#         st.pyplot(fig)
+    
+#     # Display the ADF test results in the third column
+#     with col3:
+#         adf_result = adfuller(resampled_datasets[product]['Quantity'])
+#         st.write("Augmented Dickey-Fuller Test Results:")
+#         st.write("ADF Statistic:", adf_result[0])
+#         st.write("p-value:", adf_result[1])
+#         st.write("Critical Values:")
+#         for key, value in adf_result[4].items():
+#             st.write(f"{key}: {value}")
+
+# st.divider()
 
 # Create train test split for each selected product
 # for product, data in resampled_datasets.items():
@@ -180,5 +233,3 @@ st.divider()
 #     with col2:
 #         st.write("Test Set: ", test_data.shape[0])
 #         st.dataframe(test_data)
-
-
