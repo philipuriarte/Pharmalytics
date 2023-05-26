@@ -17,6 +17,7 @@ st.markdown(
     Pharmalytics is a sales prediction system developed for FirstMed Pharmacy using the **SARIMA** model.
     ### Instructions
     1. Upload the pharmacy sales dataset below.
+        - Requirements: CSV file format
     2.  👈 Select Analytics or Predictions from the sidebar
         - To gain insights into the dataset, click on the "Analytics" option. 
         This will provide you with a comprehensive overview and analysis of the sales data, 
@@ -29,7 +30,7 @@ st.markdown(
 
 # Prompt to upload dataset
 dataset = None
-file = st.file_uploader("Upload Sales Dataset")
+file = st.file_uploader("Upload Sales Dataset", type="csv")
 if file:
     dataset = pd.read_csv(file, index_col=False)
     st.success("Dataset uploaded successfully!")
@@ -74,8 +75,8 @@ with pre_con:
     st.subheader("Data Pre-processing")
     st.markdown(
         """
-        1. **Data Cleaning**: Rows with empty cells and unnecessary rows are removed from the uploaded dataset.
-        2. **Set DateTime Index**: Display the data with a datetime index, enabling analysis and tracking of trends over time.
+        1. **Data Cleaning**: Rows and columns with empty cells are removed from the dataset.
+        2. **Set DateTime Index**: Replace the index with a datetime index, enabling analysis and tracking of trends over time.
     """
     )
     st.write("**Preprocessed Dataset**")
