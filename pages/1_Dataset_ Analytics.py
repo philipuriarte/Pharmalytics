@@ -24,11 +24,11 @@ else:
     st.stop()
 
 # Create containers to group codes together
+sales_trend_con = st.container()
 total_sales_con = st.container()
 total_rev_con = st.container()
 top_sales_con = st.container()
 top_rev_con = st.container()
-sales_trend_con = st.container()
 top_cat_con = st.container()
 cat_rank_con = st.container()
 
@@ -140,7 +140,6 @@ with sales_trend_con:
     # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
     min_date = pd.Timestamp(preprocessed_dataset.index.min().date().replace(day=1))
     max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)
-    st.write(min_date, max_date)
 
     # Resample the DataFrame based on the selected time interval
     resampled_datasets = []
