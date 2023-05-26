@@ -17,7 +17,8 @@ st.markdown(
     Pharmalytics is a sales prediction system developed for FirstMed Pharmacy using the **SARIMA** model.
     ### Instructions
     1. Upload the pharmacy sales dataset below.
-        - Requirements: CSV file format
+        - Requirements: CSV file format, Column Headers [Product Name (string), Quantity (int), Sell Price (int), 
+        Date Sold (datetime: dd-mm-yyyy), Product Category (string)]
     2.  👈 Select Analytics or Predictions from the sidebar
         - To gain insights into the dataset, click on the "Analytics" option. 
         This will provide you with a comprehensive overview and analysis of the sales data, 
