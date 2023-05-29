@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+from pmdarima import auto_arima
 
 # Set page title and icon
 st.set_page_config(
@@ -36,13 +37,17 @@ preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date
 
 # Create containers to group codes together
 top_30_products_adf_con = st.container()
+top_30_products_pred_con = st.container()
 
 # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
 min_date = pd.Timestamp(preprocessed_dataset.index.min().date().replace(day=1))
 max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)
 
+# Time interval (daily, weekly, monthly)
+time_interval = "W-MON"
+
 # Create a date range from min_date to max_date
-date_range = pd.date_range(start=min_date, end=max_date, freq="W-MON")
+date_range = pd.date_range(start=min_date, end=max_date, freq=time_interval)
 
 with top_30_products_adf_con:
     # Create an empty list to store the ADF test results
@@ -94,142 +99,62 @@ with top_30_products_adf_con:
     st.write("Non-stationary products out of total:", non_stationary_count, "/", len(adf_results_df))
     st.write("Ratio of non-stationary products:", ratio_non_stationary)
 
+with top_30_products_pred_con:
+    st.subheader("Sales Predictions")
 
-# # Get unique product names from the dataset
-# product_names = sorted(preprocessed_dataset["Product Name"].unique())
+    unique_product_names = top_30_products.unique().tolist()
+    product_to_predict = st.selectbox("Select Product to Apply Sales Predictions", unique_product_names)
 
-# # Iterate through each product
-# for product in product_names:
-#     product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product]
-#     resampled_data = product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample("W-MON").sum().reindex(date_range, fill_value=0).reset_index()
-#     resampled_data = resampled_data.set_index("index")
-
-#     # Perform the ADF test
-#     adf_result = adfuller(resampled_data['Quantity'])
+    # Get the data for the selected product
+    pred_product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product_to_predict]
+    pred_resampled_data = pred_product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample(time_interval).sum().reindex(date_range, fill_value=0).reset_index()
+    pred_resampled_data = pred_resampled_data.set_index("index")
+    pred_resampled_data
     
-#     # Calculate total sales
-#     total_sales = product_data['Quantity'].sum()
-    
-#     # Determine if sales are non-stationary
-#     is_non_stationary = adf_result[1] > 0.05
-    
-#     # Append the result to the list
-#     adf_results.append({
-#         'Product': product,
-#         'Total Sales': total_sales,
-#         'ADF Statistic': adf_result[0],
-#         'p-value': adf_result[1],
-#         'Critical Values': adf_result[4],
-#         'Is Non-Stationary': is_non_stationary
-#     })
+    # Perform ACF and PACF analysis
+    fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+    plot_acf(pred_resampled_data['Quantity'], lags=20, ax=ax[0])
+    plot_pacf(pred_resampled_data['Quantity'], lags=12, ax=ax[1])
+    ax[0].set_title(f"ACF Plot - {product_to_predict}")
+    ax[1].set_title(f"PACF Plot - {product_to_predict}")
+    plt.tight_layout()
+    st.write("**ACF and PCF Plot**")
+    st.pyplot(fig)
 
-# # Convert the list to a DataFrame
-# adf_results_df = pd.DataFrame(adf_results)
+    # Split data into train and test sets
+    train_size = int(0.8 * len(pred_resampled_data))
+    train_data = pred_resampled_data[:train_size]
+    test_data = pred_resampled_data[train_size:]
 
-# # Output the DataFrame
-# st.subheader("Dataset Augmented Dickey-Fuller Test Results")
-# st.dataframe(adf_results_df)
+    # Use auto-SARIMA to determine the order and seasonal order
+    model = auto_arima(train_data['Quantity'], seasonal=True, m=4)
+    order = model.order
+    seasonal_order = model.seasonal_order
 
-# # Count the non-stationary products
-# non_stationary_count = adf_results_df['Is Non-Stationary'].sum()
+    # Train the SARIMA model
+    sarima_model = sm.tsa.SARIMAX(train_data['Quantity'], order=order, seasonal_order=seasonal_order)
+    sarima_model_fit = sarima_model.fit()
 
-# # Calculate the ratio of non-stationary products to the total number of products
-# ratio_non_stationary = non_stationary_count / len(adf_results_df)
+    # Generate predictions on the test set
+    predictions = sarima_model_fit.predict(start=test_data.index[0], end=test_data.index[-1])
 
-# # Output the counts and ratio
-# st.write("Non-stationary products out of total:", non_stationary_count, "/", len(adf_results_df))
-# st.write("Ratio of non-stationary products:", ratio_non_stationary)
+    # Calculate accuracy statistics
+    mae = mean_absolute_error(test_data['Quantity'], predictions)
+    mse = mean_squared_error(test_data['Quantity'], predictions)
+    rmse = np.sqrt(mse)
 
+    # Plot actual vs predicted
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(pred_resampled_data.index, pred_resampled_data['Quantity'], label='Actual')
+    ax.plot(predictions.index, predictions, label='Predicted')
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Quantity")
+    ax.legend()
+    ax.set_title(f"Sales Predictions - {product_to_predict}")
+    plt.xticks(rotation=70)
+    plt.tight_layout()
 
-# # Subheader for Product Sales Predictions
-# st.subheader("Product Sales Predictions")
+    st.pyplot(fig)
+    st.write("MAE: ", mae)
+    st.write("RMSE: ", rmse)
 
-# # Multiselect box to choose products
-# selected_products = st.multiselect("Select Products", product_names, max_selections=5)
-
-# # Filter the dataset for the selected products
-# product_sales_dataset = preprocessed_dataset[preprocessed_dataset["Product Name"].isin(selected_products)]
-
-# # Resample and preprocess the data for each selected product
-# resampled_datasets = {}
-# for product in selected_products:
-#     product_data = product_sales_dataset[product_sales_dataset["Product Name"] == product]
-
-#     # Resample the data on a daily basis and fill missing dates with zero quantities
-#     resampled_data = product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample("W-MON").sum().reindex(date_range, fill_value=0).reset_index()
-#     resampled_data = resampled_data.set_index("index")  # Set "index" as the index (was previously "Date Sold")
-
-#     resampled_datasets[product] = resampled_data
-
-#     # Create two columns for the dataframe and plots
-#     col1, col2, col3 = st.columns(3)
-
-#     # Display the dataframe in the first column
-#     with col1:
-#         st.write("Dataset for", product)
-#         st.dataframe(resampled_datasets[product])
-
-#         # Calculate and display the sum of quantity
-#         quantity_sum = resampled_datasets[product]['Quantity'].sum()
-#         st.write("Sum of Quantity:", quantity_sum)
-
-#     # Display the time series plot and ACF plot in the second column
-#     with col2:
-#         st.write("Time Series Plot and ACF for", product)
-#         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 10))
-        
-#         # Plot the time series
-#         ax1.plot(resampled_datasets[product].index, resampled_datasets[product]['Quantity'])
-#         ax1.set_xlabel("Date")
-#         ax1.set_ylabel("Quantity")
-
-#         # Add some spacing between the plots
-#         ax1.margins(x=0, y=0.1)
-#         ax2.margins(x=0, y=0.1)
-#         ax3.margins(x=0, y=0.1)
-#         plt.subplots_adjust(hspace=0.4)
-        
-#         # Plot the ACF
-#         plot_acf(resampled_datasets[product]['Quantity'], ax=ax2, lags=25)
-#         ax2.set_xlabel("Lag")
-#         ax2.set_ylabel("Autocorrelation")
-
-#         # Plot the PACF
-#         plot_pacf(resampled_datasets[product]['Quantity'], ax=ax3, lags=12)
-#         ax3.set_xlabel("Lag")
-#         ax3.set_ylabel("Partial Autocorrelation")
-
-#         st.pyplot(fig)
-    
-#     # Display the ADF test results in the third column
-#     with col3:
-#         adf_result = adfuller(resampled_datasets[product]['Quantity'])
-#         st.write("Augmented Dickey-Fuller Test Results:")
-#         st.write("ADF Statistic:", adf_result[0])
-#         st.write("p-value:", adf_result[1])
-#         st.write("Critical Values:")
-#         for key, value in adf_result[4].items():
-#             st.write(f"{key}: {value}")
-
-# st.divider()
-
-# Create train test split for each selected product
-# for product, data in resampled_datasets.items():
-#     # Split the dataset into training and testing sets
-#     train_data, test_data = train_test_split(data, test_size=0.2, shuffle=False)
-
-#     # Print the name of the key
-#     st.write("Train Test Set for", product)
-
-#     # Create two columns for train and test sets
-#     col1, col2 = st.columns(2)
-
-#     # Display train set in the first column
-#     with col1:
-#         st.write("Train Set: ", train_data.shape[0])
-#         st.dataframe(train_data)
-
-#     # Display test set in the second column
-#     with col2:
-#         st.write("Test Set: ", test_data.shape[0])
-#         st.dataframe(test_data)
