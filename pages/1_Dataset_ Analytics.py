@@ -39,7 +39,7 @@ with sales_trend_con:
     product_names = sorted(preprocessed_dataset["Product Name"].unique())
 
     # Multiselect box to choose products
-    selected_products = st.multiselect("Select Products", product_names, max_selections=5)
+    selected_products = st.multiselect("Select products", product_names, max_selections=5)
 
     # Radio buttons to choose the time interval
     time_interval = st.radio("Select Time Interval", ["Daily", "Weekly", "Monthly"])

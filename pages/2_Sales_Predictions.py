@@ -117,7 +117,7 @@ with top_30_products_pred_con:
     predict_time_intervals = ["1 Week", "2 Weeks", "3 weeks", "1 Month"]
 
     # Input Widgets
-    product_to_predict = st.selectbox("Select Product to Apply Sales Predictions", unique_product_names)
+    product_to_predict = st.selectbox("Select product to predict", unique_product_names)
     predict_interval = st.select_slider("Select time interval to predict", predict_time_intervals)
 
     # Get the data for the selected product
