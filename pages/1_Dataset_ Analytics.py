@@ -15,13 +15,13 @@ st.sidebar.header("Dataset Analytics")
 # Main content
 st.title("Dataset Analytics 📈")
 
-# Load the preprocessed dataset and stop if doesn't exist
-preprocessed_dataset = None
-if os.path.exists("preprocessed_dataset.csv"):
-    preprocessed_dataset = pd.read_csv("preprocessed_dataset.csv", parse_dates=["Date Sold"], index_col="Date Sold")
-else:
+# Load the preprocessed dataset and stop if it doesn't exist
+preprocessed_dataset_path = "preprocessed_dataset.csv"
+if not os.path.exists(preprocessed_dataset_path):
     st.warning("Dataset not uploaded. Please upload a dataset first in the Home page.")
     st.stop()
+
+preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date Sold"], index_col="Date Sold")
 
 # Create containers to group codes together
 sales_trend_con = st.container()
