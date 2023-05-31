@@ -111,37 +111,22 @@ with top_30_products_adf_exp:
 with top_30_products_pred_con:
     st.subheader("Sales Predictions")
 
+    # Get unique product names from top_30_products
     unique_product_names = top_30_products.unique().tolist()
+
+    predict_time_intervals = ["1 Week", "2 Weeks", "3 weeks", "1 Month"]
+
+    # Input Widgets
     product_to_predict = st.selectbox("Select Product to Apply Sales Predictions", unique_product_names)
+    predict_interval = st.select_slider("Select time interval to predict", predict_time_intervals)
 
     # Get the data for the selected product
     pred_product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product_to_predict]
     pred_resampled_data = pred_product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample(time_interval).sum().reindex(date_range, fill_value=0).reset_index()
     pred_resampled_data = pred_resampled_data.set_index("index")
 
-    extra_info_expander = st.expander("See Extra Information")
-    with extra_info_expander:        
-        st.write("**Product Sales Aggregated Dataset**")
-        st.dataframe(pred_resampled_data)
-        
-        # Perform ACF and PACF analysis
-        fig, ax = plt.subplots(2, 1, figsize=(10, 8))
-        plot_acf(pred_resampled_data['Quantity'], lags=20, ax=ax[0])
-        plot_pacf(pred_resampled_data['Quantity'], lags=10, ax=ax[1])
-        ax[0].set_title(f"ACF Plot - {product_to_predict}")
-        ax[1].set_title(f"PACF Plot - {product_to_predict}")
-        plt.tight_layout()
-        st.write("**ACF and PCF Plot**")
-        st.pyplot(fig)
-
     # Split data into train and test sets
     train_data, test_data = train_test_split(pred_resampled_data, test_size=0.2, shuffle=False)
-
-    # Add train and test set details to extra_info_expander
-    extra_info_expander.write("Train Set")
-    extra_info_expander.dataframe(train_data)
-    extra_info_expander.write("Test Set")
-    extra_info_expander.dataframe(test_data)
 
     # Use auto-SARIMA to determine the order and seasonal order
     model = auto_arima(train_data['Quantity'], seasonal=True, m=4)
@@ -195,4 +180,28 @@ with top_30_products_pred_con:
     st.write("**Auto-ARIMA parameters**")
     st.write("Order: ", order)
     st.write("Seasonal Order: ", seasonal_order)
+
+    extra_info_expander = st.expander("See Extra Information")
+    with extra_info_expander:
+        st.write("**Product Sales Aggregated Dataset**")
+        st.dataframe(pred_resampled_data)
+        
+        # Perform ACF and PACF analysis
+        fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+        plot_acf(pred_resampled_data['Quantity'], lags=20, ax=ax[0])
+        plot_pacf(pred_resampled_data['Quantity'], lags=10, ax=ax[1])
+        ax[0].set_title(f"ACF Plot - {product_to_predict}")
+        ax[1].set_title(f"PACF Plot - {product_to_predict}")
+        plt.tight_layout()
+        st.write("**ACF and PCF Plot**")
+        st.pyplot(fig)
+
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("Train Set")
+            st.dataframe(train_data)
+        with col2:
+            st.write("Test Set")
+            st.dataframe(test_data)
 
