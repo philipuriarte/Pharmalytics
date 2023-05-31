@@ -49,8 +49,8 @@ top_30_products_adf_exp = st.expander("See ADF Test Results")
 top_30_products_pred_con = st.container()
 
 # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
-min_date = pd.Timestamp(preprocessed_dataset.index.min().date().replace(day=1))
-max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)
+min_date = pd.Timestamp(preprocessed_dataset.index.min().date())
+max_date = preprocessed_dataset.index.max().date()
 
 # Time interval (daily, weekly, monthly)
 time_interval = "W-MON"
@@ -127,7 +127,7 @@ with top_30_products_pred_con:
         # Perform ACF and PACF analysis
         fig, ax = plt.subplots(2, 1, figsize=(10, 8))
         plot_acf(pred_resampled_data['Quantity'], lags=20, ax=ax[0])
-        plot_pacf(pred_resampled_data['Quantity'], lags=12, ax=ax[1])
+        plot_pacf(pred_resampled_data['Quantity'], lags=10, ax=ax[1])
         ax[0].set_title(f"ACF Plot - {product_to_predict}")
         ax[1].set_title(f"PACF Plot - {product_to_predict}")
         plt.tight_layout()
