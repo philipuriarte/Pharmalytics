@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import altair as alt
 import os
 import statsmodels.api as sm
 from sklearn.model_selection import train_test_split
@@ -8,7 +9,6 @@ from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from pmdarima import auto_arima
-import altair as alt
 
 # Set page title and icon
 st.set_page_config(
