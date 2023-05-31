@@ -48,6 +48,9 @@ preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date
 top_30_products_adf_exp = st.expander("See ADF Test Results")
 top_30_products_pred_con = st.container()
 
+# Get the top 30 most sold products
+top_30_products = preprocessed_dataset.groupby("Product Name")["Quantity"].sum().nlargest(30).index
+
 # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
 min_date = pd.Timestamp(preprocessed_dataset.index.min().date())
 max_date = preprocessed_dataset.index.max().date()
@@ -61,9 +64,6 @@ date_range = pd.date_range(start=min_date, end=max_date, freq=time_interval)
 with top_30_products_adf_exp:
     # Create an empty list to store the ADF test results
     adf_results = []
-
-    # Get the top 30 most sold products
-    top_30_products = preprocessed_dataset.groupby("Product Name")["Quantity"].sum().nlargest(30).index
 
     # Iterate through each product
     for product in top_30_products:
