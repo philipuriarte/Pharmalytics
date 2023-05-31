@@ -9,6 +9,7 @@ from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from pmdarima import auto_arima
+import altair as alt
 
 # Set page title and icon
 st.set_page_config(
@@ -145,41 +146,57 @@ with top_30_products_pred_con:
     mse = mean_squared_error(test_data['Quantity'], predictions)
     rmse = np.sqrt(mse)
 
+    act_pred_tab, final_app_tab = st.tabs(["📒 Actual vs Predicted", "📊 Final App"])
+
     col1, col2 = st.columns(2)
 
-    # Plot actual vs predicted
-    with col1:
-        st.write("**Actual vs Predicted**")
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.plot(pred_resampled_data.index, pred_resampled_data['Quantity'], label='Actual')
-        ax.plot(predictions.index, predictions, label='Predicted')
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Quantity")
-        ax.legend()
-        ax.set_title(f"Sales Predictions - {product_to_predict}")
-        plt.xticks(rotation=70)
-        plt.tight_layout()
-        st.pyplot(fig)
+    with act_pred_tab:
+        data = pd.concat([pred_resampled_data['Quantity'].rename('Actual'), predictions.rename('Predicted')], axis=1).reset_index()
 
-    with col2:
-        st.write("**What the predictions should look like in final app**")
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.plot(train_data.index, train_data['Quantity'], label='Actual')
-        ax.plot(predictions.index, predictions, label='Predicted')
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Quantity")
-        ax.legend()
-        ax.set_title(f"Sales Predictions - {product_to_predict}")
-        plt.xticks(rotation=70)
-        plt.tight_layout()
-        st.pyplot(fig)
+        chart = alt.Chart(data).mark_line().encode(
+            x='index:T',
+            y=alt.Y('value:Q', axis=alt.Axis(title='Quantity')),
+            color=alt.Color('data:N', scale=alt.Scale(domain=['Actual', 'Predicted'], range=['steelblue', 'orange'])),
+            tooltip=['index:T', 'value:Q', 'data:N']
+        ).transform_fold(
+            fold=['Actual', 'Predicted'],
+            as_=['data', 'value']
+        ).properties(
+            title="Actual vs Predicted",
+            width=600,
+            height=400
+        )
+
+        st.altair_chart(chart)
     
-    st.write("**Accuracy Results**")
-    st.write("MAE: ", mae)
-    st.write("RMSE: ", rmse)
-    st.write("**Auto-ARIMA parameters**")
-    st.write("Order: ", order)
-    st.write("Seasonal Order: ", seasonal_order)
+    with final_app_tab:
+        data = pd.concat([train_data['Quantity'].rename('Actual'), predictions.rename('Predicted')], axis=1).reset_index()
+
+        chart = alt.Chart(data).mark_line().encode(
+            x='index:T',
+            y=alt.Y('value:Q', axis=alt.Axis(title='Quantity')),
+            color=alt.Color('data:N', scale=alt.Scale(domain=['Actual', 'Predicted'], range=['steelblue', 'orange'])),
+            tooltip=['index:T', 'value:Q', 'data:N']
+        ).transform_fold(
+            fold=['Actual', 'Predicted'],
+            as_=['data', 'value']
+        ).properties(
+            title="What the predictions should look like in final app",
+            width=600,
+            height=400
+        )
+
+        st.altair_chart(chart)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Auto-ARIMA parameters**")
+        st.write("Order: ", order)
+        st.write("Seasonal Order: ", seasonal_order)
+    with col2:        
+        st.write("**Accuracy Results**")
+        st.write("MAE: ", mae)
+        st.write("RMSE: ", rmse)
 
     extra_info_expander = st.expander("See Extra Information")
     with extra_info_expander:
