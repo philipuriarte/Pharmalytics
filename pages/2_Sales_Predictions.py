@@ -22,6 +22,15 @@ st.markdown(
     """
     Pharmalitics uses the SARIMA model to generate sales predictions based on your uploaded dataset. 
     This advanced technique captures seasonal and trend patterns in the data to forecast future trends.
+
+    To ensure efficiency and practicality, our app focuses on predicting sales for the top 30 most sold products 
+    in FirstMed Pharmacy and leverages the power of Auto ARIMA for predicting sales. By automating the model 
+    fitting process, we eliminate the need for manual selection and comparison of different models. 
+    
+    This streamlined 
+    approach enables us to provide forecasts for the key items driving the pharmacy's revenue, This automated process 
+    saves time and resources, allowing us to focus on delivering reliable sales predictions while leaving room for 
+    future expansion and inclusion of additional products.
 """
 )
 
@@ -36,7 +45,7 @@ if not os.path.exists(preprocessed_dataset_path):
 preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date Sold"], index_col="Date Sold")
 
 # Create containers to group codes together
-top_30_products_adf_con = st.container()
+top_30_products_adf_exp = st.expander("See ADF Test Results")
 top_30_products_pred_con = st.container()
 
 # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
@@ -49,7 +58,7 @@ time_interval = "W-MON"
 # Create a date range from min_date to max_date
 date_range = pd.date_range(start=min_date, end=max_date, freq=time_interval)
 
-with top_30_products_adf_con:
+with top_30_products_adf_exp:
     # Create an empty list to store the ADF test results
     adf_results = []
 
@@ -109,22 +118,30 @@ with top_30_products_pred_con:
     pred_product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product_to_predict]
     pred_resampled_data = pred_product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample(time_interval).sum().reindex(date_range, fill_value=0).reset_index()
     pred_resampled_data = pred_resampled_data.set_index("index")
-    pred_resampled_data
-    
-    # Perform ACF and PACF analysis
-    fig, ax = plt.subplots(2, 1, figsize=(10, 8))
-    plot_acf(pred_resampled_data['Quantity'], lags=20, ax=ax[0])
-    plot_pacf(pred_resampled_data['Quantity'], lags=12, ax=ax[1])
-    ax[0].set_title(f"ACF Plot - {product_to_predict}")
-    ax[1].set_title(f"PACF Plot - {product_to_predict}")
-    plt.tight_layout()
-    st.write("**ACF and PCF Plot**")
-    st.pyplot(fig)
+
+    extra_info_expander = st.expander("See Extra Information")
+    with extra_info_expander:        
+        st.write("**Product Sales Aggregated Dataset**")
+        st.dataframe(pred_resampled_data)
+        
+        # Perform ACF and PACF analysis
+        fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+        plot_acf(pred_resampled_data['Quantity'], lags=20, ax=ax[0])
+        plot_pacf(pred_resampled_data['Quantity'], lags=12, ax=ax[1])
+        ax[0].set_title(f"ACF Plot - {product_to_predict}")
+        ax[1].set_title(f"PACF Plot - {product_to_predict}")
+        plt.tight_layout()
+        st.write("**ACF and PCF Plot**")
+        st.pyplot(fig)
 
     # Split data into train and test sets
-    train_size = int(0.8 * len(pred_resampled_data))
-    train_data = pred_resampled_data[:train_size]
-    test_data = pred_resampled_data[train_size:]
+    train_data, test_data = train_test_split(pred_resampled_data, test_size=0.2, shuffle=False)
+
+    # Add train and test set details to extra_info_expander
+    extra_info_expander.write("Train Set")
+    extra_info_expander.dataframe(train_data)
+    extra_info_expander.write("Test Set")
+    extra_info_expander.dataframe(test_data)
 
     # Use auto-SARIMA to determine the order and seasonal order
     model = auto_arima(train_data['Quantity'], seasonal=True, m=4)
@@ -143,18 +160,39 @@ with top_30_products_pred_con:
     mse = mean_squared_error(test_data['Quantity'], predictions)
     rmse = np.sqrt(mse)
 
-    # Plot actual vs predicted
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(pred_resampled_data.index, pred_resampled_data['Quantity'], label='Actual')
-    ax.plot(predictions.index, predictions, label='Predicted')
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Quantity")
-    ax.legend()
-    ax.set_title(f"Sales Predictions - {product_to_predict}")
-    plt.xticks(rotation=70)
-    plt.tight_layout()
+    col1, col2 = st.columns(2)
 
-    st.pyplot(fig)
+    # Plot actual vs predicted
+    with col1:
+        st.write("**Actual vs Predicted**")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(pred_resampled_data.index, pred_resampled_data['Quantity'], label='Actual')
+        ax.plot(predictions.index, predictions, label='Predicted')
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Quantity")
+        ax.legend()
+        ax.set_title(f"Sales Predictions - {product_to_predict}")
+        plt.xticks(rotation=70)
+        plt.tight_layout()
+        st.pyplot(fig)
+
+    with col2:
+        st.write("**What the predictions should look like in final app**")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(train_data.index, train_data['Quantity'], label='Actual')
+        ax.plot(predictions.index, predictions, label='Predicted')
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Quantity")
+        ax.legend()
+        ax.set_title(f"Sales Predictions - {product_to_predict}")
+        plt.xticks(rotation=70)
+        plt.tight_layout()
+        st.pyplot(fig)
+    
+    st.write("**Accuracy Results**")
     st.write("MAE: ", mae)
     st.write("RMSE: ", rmse)
+    st.write("**Auto-ARIMA parameters**")
+    st.write("Order: ", order)
+    st.write("Seasonal Order: ", seasonal_order)
 
