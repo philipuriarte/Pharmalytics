@@ -21,7 +21,7 @@ st.set_page_config(
 st.title("Sales Predictions 💰")
 st.markdown(
     """
-    Pharmalitics uses the SARIMA model to generate sales predictions based on your uploaded dataset. 
+    Pharmalytics uses the SARIMA model to generate sales predictions based on your uploaded dataset. 
     This advanced technique captures seasonal and trend patterns in the data to forecast future trends.
 
     To ensure efficiency and practicality, our app focuses on predicting sales for the top 30 most sold products 
