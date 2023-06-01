@@ -28,10 +28,9 @@ st.markdown(
     in FirstMed Pharmacy and leverages the power of Auto ARIMA for predicting sales. By automating the model 
     fitting process, we eliminate the need for manual selection and comparison of different models. 
     
-    This streamlined 
-    approach enables us to provide forecasts for the key items driving the pharmacy's revenue, This automated process 
-    saves time and resources, allowing us to focus on delivering reliable sales predictions while leaving room for 
-    future expansion and inclusion of additional products.
+    This streamlined approach enables us to provide forecasts for the key items driving the pharmacy's revenue and 
+    saves time and resources, allowing us to focus on delivering reliable sales predictions while leaving 
+    room for future expansion and inclusion of additional products.
 """
 )
 
