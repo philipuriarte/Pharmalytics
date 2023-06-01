@@ -127,7 +127,34 @@ with top_30_products_pred_con:
             st.altair_chart(chart)
         
         with final_app_tab:
-            data = pd.concat([train_data['Quantity'].rename('Actual'), predictions.rename('Predicted')], axis=1).reset_index()
+            # Use auto-SARIMA to determine the order and seasonal order
+            model_final = auto_arima(pred_resampled_data['Quantity'], seasonal=True, m=4)
+            order_final = model_final.order
+            seasonal_order_final = model_final.seasonal_order
+
+            # Train the SARIMA model
+            sarima_model_final = sm.tsa.SARIMAX(pred_resampled_data['Quantity'], order=order_final, seasonal_order=seasonal_order_final)
+            sarima_model_fit_final = sarima_model_final.fit()
+
+            # 
+            match predict_interval:
+                case "1 Week":
+                    offset = pd.offsets.DateOffset(weeks=1)
+                case "2 Weeks":
+                    offset = pd.offsets.DateOffset(weeks=2)
+                case "3 weeks":
+                    offset = pd.offsets.DateOffset(weeks=3)
+                case "1 Month":
+                    offset = pd.offsets.DateOffset(months=1)
+            
+            # Create predictions start and end date variables
+            pred_start = pred_resampled_data.index[-1]
+            pred_end = pred_start + offset
+
+            # Generate predictions            
+            predictions_final = sarima_model_fit_final.predict(start=pred_start, end=pred_end)
+                        
+            data = pd.concat([pred_resampled_data['Quantity'].rename('Actual'), predictions_final.rename('Predicted')], axis=1).reset_index()
 
             chart = alt.Chart(data).mark_line().encode(
                 x='index:T',
@@ -138,7 +165,7 @@ with top_30_products_pred_con:
                 fold=['Actual', 'Predicted'],
                 as_=['data', 'value']
             ).properties(
-                title="What the predictions should look like in final app",
+                title=f"Sales Predictions for {product_to_predict} in {predict_interval}",
                 width=600,
                 height=400
             )
