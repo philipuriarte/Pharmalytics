@@ -61,53 +61,6 @@ time_interval = "W-MON"
 # Create a date range from min_date to max_date
 date_range = pd.date_range(start=min_date, end=max_date, freq=time_interval)
 
-with top_30_products_adf_exp:
-    # Create an empty list to store the ADF test results
-    adf_results = []
-
-    # Iterate through each product
-    for product in top_30_products:
-        product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product]
-        resampled_data = product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample("W-MON").sum().reindex(date_range, fill_value=0).reset_index()
-        resampled_data = resampled_data.set_index("index")
-
-        # Perform the ADF test
-        adf_result = adfuller(resampled_data['Quantity'])
-        
-        # Calculate total sales
-        total_sales = product_data['Quantity'].sum()
-        
-        # Determine if sales are non-stationary
-        is_non_stationary = adf_result[1] > 0.05
-        
-        # Append the result to the list
-        adf_results.append({
-            'Product': product,
-            'Total Sales': total_sales,
-            'ADF Statistic': adf_result[0],
-            'p-value': adf_result[1],
-            'Critical Values': adf_result[4],
-            'Is Non-Stationary': is_non_stationary
-        })
-
-    # Convert the list to a DataFrame
-    adf_results_df = pd.DataFrame(adf_results)
-    adf_results_df.index += 1
-
-    # Output the DataFrame
-    st.subheader("Top 30 Most Sold Products ADF Test Results")
-    st.dataframe(adf_results_df)
-
-    # Count the non-stationary products
-    non_stationary_count = adf_results_df['Is Non-Stationary'].sum()
-
-    # Calculate the ratio of non-stationary products to the total number of products
-    ratio_non_stationary = non_stationary_count / len(adf_results_df)
-
-    # Output the counts and ratio
-    st.write("Non-stationary products out of total:", non_stationary_count, "/", len(adf_results_df))
-    st.write("Ratio of non-stationary products:", ratio_non_stationary)
-
 with top_30_products_pred_con:
     st.subheader("Sales Predictions")
 
