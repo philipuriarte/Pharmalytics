@@ -60,23 +60,23 @@ time_interval = "W-MON"
 # Create a date range from min_date to max_date
 date_range = pd.date_range(start=min_date, end=max_date, freq=time_interval)
 
-with top_30_products_pred_con:
-    st.subheader("Sales Predictions")
+# Get unique product names from top_30_products
+unique_product_names = top_30_products.unique().tolist()
 
-    # Get unique product names from top_30_products
-    unique_product_names = top_30_products.unique().tolist()
+predict_time_intervals = ["1 Week", "2 Weeks", "3 weeks", "1 Month"]
 
-    predict_time_intervals = ["1 Week", "2 Weeks", "3 weeks", "1 Month"]
-
+with st.sidebar:
     # Input Widgets
-    product_to_predict = st.selectbox("Select product to predict", unique_product_names)
-    predict_interval = st.select_slider("Select time interval to predict", predict_time_intervals)
+    product_to_predict = st.selectbox("Select a product to predict", unique_product_names, index=0)
+    predict_interval = st.select_slider("Select how far into the future to predict", predict_time_intervals)
     generate_button = st.button("Generate", help="Click to generate sales predictions")
 
+with top_30_products_pred_con:
     if generate_button is not True:
         st.stop()
     
     with st.spinner('Processing...'):
+
         # Get the data for the selected product
         pred_product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product_to_predict]
         pred_resampled_data = pred_product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample(time_interval).sum().reindex(date_range, fill_value=0).reset_index()
@@ -101,7 +101,8 @@ with top_30_products_pred_con:
         mae = mean_absolute_error(test_data['Quantity'], predictions)
         mse = mean_squared_error(test_data['Quantity'], predictions)
         rmse = np.sqrt(mse)
-
+        
+        st.subheader(product_to_predict + " Sales Predictions")
         act_pred_tab, final_app_tab = st.tabs(["📒 Actual vs Predicted", "📊 Final App"])
 
         col1, col2 = st.columns(2)
