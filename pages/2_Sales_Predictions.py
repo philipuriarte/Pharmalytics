@@ -136,16 +136,15 @@ with top_30_products_pred_con:
             sarima_model_final = sm.tsa.SARIMAX(pred_resampled_data['Quantity'], order=order_final, seasonal_order=seasonal_order_final)
             sarima_model_fit_final = sarima_model_final.fit()
 
-            # 
-            match predict_interval:
-                case "1 Week":
-                    offset = pd.offsets.DateOffset(weeks=1)
-                case "2 Weeks":
-                    offset = pd.offsets.DateOffset(weeks=2)
-                case "3 weeks":
-                    offset = pd.offsets.DateOffset(weeks=3)
-                case "1 Month":
-                    offset = pd.offsets.DateOffset(months=1)
+            # Assign offset value based on selected predict interval
+            if predict_interval == "1 Week":
+                offset = pd.offsets.DateOffset(weeks=1)
+            elif predict_interval == "2 Weeks":
+                offset = pd.offsets.DateOffset(weeks=2)
+            elif predict_interval == "3 weeks":
+                offset = pd.offsets.DateOffset(weeks=3)
+            elif predict_interval == "1 Month":
+                offset = pd.offsets.DateOffset(months=1)
             
             # Create predictions start and end date variables
             pred_start = pred_resampled_data.index[-1]
