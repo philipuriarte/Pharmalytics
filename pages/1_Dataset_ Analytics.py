@@ -103,8 +103,10 @@ with sales_trend_con:
         # Render the chart using st.altair_chart
         st.altair_chart(chart, use_container_width=True)
 
-        st.write("Render Dataframe for extra information in testing")
-        st.dataframe(expanded_dataset)
+        with st.expander("See Extra Information"):
+            st.write("**Aggregated Data for Selected Products**")
+            st.write(selected_products)
+            st.dataframe(expanded_dataset)
     else:
         st.warning("No data available for the selected products.")
 
