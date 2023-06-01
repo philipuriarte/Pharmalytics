@@ -38,8 +38,10 @@ with sales_trend_con:
     # Get unique product names from the dataset
     product_names = sorted(preprocessed_dataset["Product Name"].unique())
 
+    preselected_products = ["Biogesic 500mg", "Bioflu 10mg/2mg/500mg", "Cetirizine 10mg", "Neozep Forte 10mg/2mg/500mg", "Losartan 50mg"]
+
     # Multiselect box to choose products
-    selected_products = st.multiselect("Select products", product_names, max_selections=5)
+    selected_products = st.multiselect("Select products", product_names, default=preselected_products, max_selections=5)
 
     # Radio buttons to choose the time interval
     time_interval = st.radio("Select Time Interval", ["Daily", "Weekly", "Monthly"])
