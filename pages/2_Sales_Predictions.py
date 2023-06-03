@@ -31,6 +31,8 @@ st.markdown(
     This streamlined approach enables us to provide forecasts for the key items driving the pharmacy's revenue and 
     saves time and resources, allowing us to focus on delivering reliable sales predictions while leaving 
     room for future expansion and inclusion of additional products.
+
+    👈 Select product to predict and time interval on how far into the future to predict from the sidebar
 """
 )
 
@@ -197,7 +199,7 @@ with top_30_products_pred_con:
             st.write("**ACF and PCF Plot**")
             st.pyplot(fig)
 
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             
             with col1:
                 st.write("Train Set")
@@ -205,4 +207,8 @@ with top_30_products_pred_con:
             with col2:
                 st.write("Test Set")
                 st.dataframe(test_data)
+            with col3:
+                st.write("Predictions")
+                predictions = predictions.rename("Quantity")
+                st.dataframe(predictions)
 
