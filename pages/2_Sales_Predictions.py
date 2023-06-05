@@ -24,15 +24,24 @@ st.markdown(
     Pharmalytics uses the SARIMA model to generate sales predictions based on your uploaded dataset. 
     This advanced technique captures seasonal and trend patterns in the data to forecast future trends.
 
+    👈 Select a product to predict and how far into the future to predict from the sidebar.
+"""
+)
+descrip_exp = st.expander("See Extra Information")
+descrip_exp.markdown(
+    """
     To ensure efficiency and practicality, our app focuses on predicting sales for the top 30 most sold products 
     in FirstMed Pharmacy and leverages the power of Auto ARIMA for predicting sales. By automating the model 
-    fitting process, we eliminate the need for manual selection and comparison of different models. 
+    fitting process, we eliminate the need for manual selection and comparison of different models.
     
     This streamlined approach enables us to provide forecasts for the key items driving the pharmacy's revenue and 
     saves time and resources, allowing us to focus on delivering reliable sales predictions while leaving 
     room for future expansion and inclusion of additional products.
 
-    👈 Select product to predict and time interval on how far into the future to predict from the sidebar
+    The top 30 most sold products are prioritized for predictions because they have a larger dataset, allowing for 
+    more accurate forecasts, and their sales have a greater impact on overall revenue compared to products outside 
+    the top 30 where the aggregated datasets are smaller, leading to less accurate predictions due to the limited 
+    historical sales information.
 """
 )
 
