@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 
+
 def preprocess_dataset(dataset):
-    # Drop the unnamed columns
+    # Drop unnamed columns
     unnamed_columns = [col for col in dataset.columns if 'Unnamed' in col]
     dataset.drop(unnamed_columns, axis=1, inplace=True)
 
@@ -14,10 +15,9 @@ def preprocess_dataset(dataset):
 
     preprocessed_dataset = dataset.reset_index(drop=True)
 
-    # Convert the "Date Sold" column to datetime format
+    # Convert the "Date Sold" column to datetime format and set as index
     preprocessed_dataset["Date Sold"] = pd.to_datetime(preprocessed_dataset["Date Sold"], format="%m/%d/%Y")
-
-    # Create a new DataFrame with the dates as the index
     preprocessed_dataset = preprocessed_dataset.set_index("Date Sold")
 
     return preprocessed_dataset
+
