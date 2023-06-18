@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import os
+from utils import preprocess_dataset
 
 
 # Set page title and icon
@@ -48,29 +48,11 @@ if os.path.exists("uploaded_dataset.csv") and not file:
     st.write("**Uploaded Dataset:**")
     st.dataframe(dataset, width=700)
 
-st.divider()
-
 # Create containers to group codes together
-pre_con = st.container()
+pre_con = st.expander("Show Preprocessing Procedure")
 
 with pre_con:
-    # Drop the unnamed columns
-    unnamed_columns = [col for col in dataset.columns if 'Unnamed' in col]
-    dataset.drop(unnamed_columns, axis=1, inplace=True)
-
-    # Replace all occurrences of "#REF!" with NaN (because of auto-fill category in Google Sheet)
-    dataset.replace("#REF!", np.nan, inplace=True)
-
-    # Drop all rows that contain NaN values (All rows that have a single NaN value will be dropped)
-    dataset.dropna(inplace=True)
-
-    cleaned_dataset = dataset.reset_index(drop=True)
-
-    # Convert the "Date Sold" column to datetime format
-    cleaned_dataset["Date Sold"] = pd.to_datetime(cleaned_dataset["Date Sold"], format="%m/%d/%Y")
-
-    # Create a new DataFrame with the dates as the index
-    indexed_dataset = cleaned_dataset.set_index("Date Sold")
+    preprocessed_dataset = preprocess_dataset(dataset)
 
     # Show Preprocessed Dataset
     st.subheader("Data Pre-processing")
@@ -81,6 +63,6 @@ with pre_con:
     """
     )
     st.write("**Preprocessed Dataset**")
-    st.dataframe(indexed_dataset, width=700)
+    st.dataframe(preprocessed_dataset, width=700)
 
-    indexed_dataset.to_csv("preprocessed_dataset.csv", date_format="%m/%d/%Y") # Save preprocessed dataset to local machine
+    preprocessed_dataset.to_csv("preprocessed_dataset.csv", date_format="%m/%d/%Y") # Save preprocessed dataset to local machine
