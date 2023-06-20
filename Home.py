@@ -4,6 +4,10 @@ import os
 
 
 def preprocess_dataset(dataset: pd.DataFrame) -> pd.DataFrame:
+    """
+    Preprocesses the dataset by dropping unnamed columns, replacing "#REF!" with None,
+    dropping rows with None values, and converting the "Date Sold" column to datetime format.
+    """
     # Drop unnamed columns
     unnamed_columns = [col for col in dataset.columns if 'Unnamed' in col]
     dataset.drop(unnamed_columns, axis=1, inplace=True)
@@ -21,25 +25,6 @@ def preprocess_dataset(dataset: pd.DataFrame) -> pd.DataFrame:
     preprocessed_dataset = preprocessed_dataset.set_index("Date Sold")
 
     return preprocessed_dataset
-
-
-def upload_load_dataset():
-    file = st.file_uploader("Upload Sales Dataset", type="csv")
-    dataset_exists = os.path.exists("uploaded_dataset.csv")
-
-    # Load previously uploaded dataset (if exists and no new dataset is uploaded)
-    if dataset_exists and not file:
-        dataset = pd.read_csv("uploaded_dataset.csv", index_col=None)
-        return dataset
-
-    if file is None:
-        st.warning("Please upload a CSV file.")
-        st.stop()
-
-    dataset = pd.read_csv(file, index_col=False)
-    dataset.to_csv("uploaded_dataset.csv", index=None)  # Save dataset
-
-    return dataset
 
 
 def main():
@@ -65,12 +50,23 @@ def main():
             to generate sales predictions based on the uploaded dataset.
     """
     )
+    
+    file = st.file_uploader("Upload Sales Dataset", type="csv")
+    dataset_exists = os.path.exists("uploaded_dataset.csv")
 
-    dataset = upload_load_dataset()    
+    # Load previously uploaded dataset (if exists and no new dataset is uploaded)
+    if dataset_exists and file is None:
+        dataset = pd.read_csv("uploaded_dataset.csv", index_col=None)
+    elif file is None:
+        st.warning("Please upload a CSV file.")
+        st.stop()    
+    else:
+        dataset = pd.read_csv(file, index_col=False)
+        dataset.to_csv("uploaded_dataset.csv", index=None)  # Save dataset
+
     st.write("**Dataset Preview:**")
     st.dataframe(dataset, width=700)
 
-    # Preprocessing
     pre_con = st.expander("Show Preprocessing Procedure")
 
     with pre_con:
