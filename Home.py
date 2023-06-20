@@ -1,7 +1,26 @@
 import streamlit as st
 import pandas as pd
 import os
-from utils import preprocess_dataset
+
+
+def preprocess_dataset(dataset: pd.DataFrame) -> pd.DataFrame:
+    # Drop unnamed columns
+    unnamed_columns = [col for col in dataset.columns if 'Unnamed' in col]
+    dataset.drop(unnamed_columns, axis=1, inplace=True)
+
+    # Replace all occurrences of "#REF!" with None due to auto-fill category in Google Sheet dataset
+    dataset.replace("#REF!", None, inplace=True)
+
+    # Drop all rows that contain None values
+    dataset.dropna(inplace=True)
+
+    preprocessed_dataset = dataset.reset_index(drop=True)
+
+    # Convert the "Date Sold" column to datetime format and set as index
+    preprocessed_dataset["Date Sold"] = pd.to_datetime(preprocessed_dataset["Date Sold"], format="%m/%d/%Y")
+    preprocessed_dataset = preprocessed_dataset.set_index("Date Sold")
+
+    return preprocessed_dataset
 
 
 def upload_load_dataset():

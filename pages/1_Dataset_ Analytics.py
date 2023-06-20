@@ -2,10 +2,12 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import os
-from utils import total_analytics, top_analytics, altair_chart
 
 
-def process_data(selected_products, product_sales_dataset, time_interval, date_range):
+def process_data(selected_products: list, product_sales_dataset: pd.DataFrame, time_interval: str, date_range: pd.date_range) -> pd.DataFrame:
+    """
+    Process the data for selected products by resampling and expanding it based on the time interval and date range.
+    """
     processed_datasets = []
     for product in selected_products:
         resampled_data = product_sales_dataset[product_sales_dataset["Product Name"] == product].resample(time_interval).sum().fillna(0)
@@ -23,37 +25,66 @@ def process_data(selected_products, product_sales_dataset, time_interval, date_r
     return processed_dataset
 
 
-# Set page title and icon
-st.set_page_config(
-    page_title="Dataset Analytics",
-    page_icon="📈",
-)
+def total_analytics(dataset: pd.DataFrame, column: str) -> pd.DataFrame:
+    """
+    Perform data analytics on the whole dataset by grouping it based on the product name and summing the specified column.
+    """
+    data_per_product = dataset.groupby(["Product Name"])[column].sum()
+    quantity_df = pd.DataFrame(data_per_product).reset_index()
 
-st.sidebar.header("Dataset Analytics")
+    return quantity_df
 
-# Main content
-st.title("Dataset Analytics 📈")
 
-# Load the preprocessed dataset and stop if it doesn't exist
-preprocessed_dataset_path = "preprocessed_dataset.csv"
-preprocessed_dataset_exists = os.path.exists(preprocessed_dataset_path)
+def top_analytics(dataset: pd.DataFrame, column: str or None, max_range: int) -> pd.DataFrame:
+    """
+    Perform ranked analytics on the dataset by selecting the top products based on the specified column and maximum range.
+    """
+    if column is None:
+        top_data = dataset.sort_values(ascending=False).head(max_range).reset_index() # Get top *max_range* products
+    else:
+        top_data = dataset.sort_values(column, ascending=False).head(max_range).reset_index() # Get top *max_range* products
+        top_data = top_data.drop("index", axis=1) # Remove Index column
+    
+    top_data.index += 1 # Start with index 1 instead 0
 
-if not preprocessed_dataset_exists:
-    st.warning("Dataset not uploaded. Please upload a dataset first in the Home page.")
-    st.stop()
+    return top_data
 
-preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date Sold"], index_col="Date Sold")
 
-# Create containers to group codes together
-sales_trend_con = st.container()
-total_sales_con = st.container()
-total_rev_con = st.container()
-top_sales_con = st.container()
-top_rev_con = st.container()
-top_cat_con = st.container()
-cat_rank_con = st.container()
+def altair_chart(dataset: pd.DataFrame, x_label: str, y_label: str) -> alt.Chart:
+    """
+    Generate an Altair bar chart based on the provided dataset, x-label, and y-label.
+    """
+    chart = alt.Chart(dataset).mark_bar().encode(
+        x= alt.X(x_label, sort=None),
+        y= y_label
+    )
+    
+    return chart
 
-with sales_trend_con:
+
+def main():
+    # Set page title and icon
+    st.set_page_config(
+        page_title="Dataset Analytics",
+        page_icon="📈",
+    )
+
+    st.sidebar.header("Dataset Analytics")
+
+    # Main content
+    st.title("Dataset Analytics 📈")
+
+    # Load the preprocessed dataset and stop if it doesn't exist
+    preprocessed_dataset_path = "preprocessed_dataset.csv"
+    preprocessed_dataset_exists = os.path.exists(preprocessed_dataset_path)
+
+    if not preprocessed_dataset_exists:
+        st.warning("Dataset not uploaded. Please upload a dataset first in the Home page.")
+        st.stop()
+
+    preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date Sold"], index_col="Date Sold")
+
+    
     st.subheader("Product Sales Trend Over Time")
 
     # Setup Multiselect box to choose products
@@ -98,7 +129,7 @@ with sales_trend_con:
     else:
         st.warning("No data available for the selected products.")
 
-with total_sales_con:
+
     st.subheader("Total Sales Per Product")
     total_sales_data_tab, total_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -111,7 +142,7 @@ with total_sales_con:
         sales_chart = altair_chart(sorted_sales_df, "Product Name", "Quantity")
         st.altair_chart(sales_chart, use_container_width=True)
 
-with total_rev_con:
+
     st.subheader("Total Revenue Per Product")
     total_rev_data_tab, total_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -124,7 +155,7 @@ with total_rev_con:
         revenue_chart = altair_chart(sorted_rev_df, "Product Name", "Sell Price")
         st.altair_chart(revenue_chart, use_container_width=True)
 
-with top_sales_con:
+
     st.subheader("Top 30 Products With Highest Sales")
     top_sales_data_tab, top_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -136,7 +167,7 @@ with top_sales_con:
         top_sales_chart = altair_chart(top_products_sales, "Product Name", "Quantity")
         st.altair_chart(top_sales_chart, use_container_width=True)
 
-with top_rev_con:
+
     st.subheader("Top 30 Products With Highest Revenue")
     top_rev_data_tab, top_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -148,13 +179,11 @@ with top_rev_con:
         top_revenue_chart = altair_chart(top_products_rev, "Product Name", "Sell Price")
         st.altair_chart(top_revenue_chart, use_container_width=True)
 
-with top_cat_con:
+
     st.subheader("Top Sales & Revenue Data Per Category")
 
-    # Get unique preduct names from the dataset
+    # Setup Select box to choose category
     categories = sorted(preprocessed_dataset["Product Category"].unique())
-
-    # Create a select box for selecting the category
     selected_category = st.selectbox("Select Category", categories)
 
     # Filter the dataset for the selected category
@@ -186,7 +215,7 @@ with top_cat_con:
         top_rev_cat_chart = altair_chart(top_products_rev_cat, "Product Name", "Sell Price")
         st.altair_chart(top_rev_cat_chart, use_container_width=True)
 
-with cat_rank_con:
+
     st.subheader("Category Ranking")
     
     st.write("**Top categories with highest sales per category**")
@@ -212,3 +241,6 @@ with cat_rank_con:
     with cat_rev_rank_chart_tab:
         cat_rev_rank_chart = altair_chart(category_rev_ranking, "Product Category", "Sell Price")
         st.altair_chart(cat_rev_rank_chart, use_container_width=True)
+
+if __name__ == "__main__":
+    main()
