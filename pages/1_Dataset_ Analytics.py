@@ -211,13 +211,26 @@ with cat_rank_con:
     
     # TABS for top categories with highest sales per category
     st.write("**Top categories with highest sales per category**")
-    cat_rank_data_tab, cat_rank_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
+    cat_sales_rank_data_tab, cat_sales_rank_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
-    with cat_rank_data_tab:
+    with cat_sales_rank_data_tab:
         category_sales_ranking = preprocessed_dataset.groupby("Product Category")["Quantity"].sum().reset_index()
         category_sales_ranking = top_analytics(category_sales_ranking, "Quantity", len(category_sales_ranking))
         st.dataframe(category_sales_ranking)
 
-    with cat_rank_chart_tab:
+    with cat_sales_rank_chart_tab:
         cat_sales_rank_chart = altair_chart(category_sales_ranking, "Product Category", "Quantity")
         st.altair_chart(cat_sales_rank_chart, use_container_width=True)
+    
+    # TABS for top categories with highest revenue per category
+    st.write("**Top categories with highest revenue per category**")
+    cat_rev_rank_data_tab, cat_rev_rank_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
+
+    with cat_rev_rank_data_tab:
+        category_rev_ranking = preprocessed_dataset.groupby("Product Category")["Sell Price"].sum().reset_index()
+        category_rev_ranking = top_analytics(category_rev_ranking, "Sell Price", len(category_rev_ranking))
+        st.dataframe(category_rev_ranking)
+
+    with cat_rev_rank_chart_tab:
+        cat_rev_rank_chart = altair_chart(category_rev_ranking, "Product Category", "Sell Price")
+        st.altair_chart(cat_rev_rank_chart, use_container_width=True)
