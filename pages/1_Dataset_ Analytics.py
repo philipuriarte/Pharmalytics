@@ -85,6 +85,7 @@ def main():
     preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date Sold"], index_col="Date Sold")
 
     
+
     st.subheader("Product Sales Trend Over Time")
 
     # Setup Multiselect box to choose products
@@ -143,6 +144,7 @@ def main():
         st.altair_chart(sales_chart, use_container_width=True)
 
 
+
     st.subheader("Total Revenue Per Product")
     total_rev_data_tab, total_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -154,6 +156,7 @@ def main():
         sorted_rev_df = revenue_df.sort_values("Sell Price", ascending=False)
         revenue_chart = altair_chart(sorted_rev_df, "Product Name", "Sell Price")
         st.altair_chart(revenue_chart, use_container_width=True)
+
 
 
     st.subheader("Top 30 Products With Highest Sales")
@@ -168,6 +171,7 @@ def main():
         st.altair_chart(top_sales_chart, use_container_width=True)
 
 
+
     st.subheader("Top 30 Products With Highest Revenue")
     top_rev_data_tab, top_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -180,6 +184,7 @@ def main():
         st.altair_chart(top_revenue_chart, use_container_width=True)
 
 
+    
     st.subheader("Top Sales & Revenue Data Per Category")
 
     # Setup Select box to choose category
@@ -216,6 +221,7 @@ def main():
         st.altair_chart(top_rev_cat_chart, use_container_width=True)
 
 
+
     st.subheader("Category Ranking")
     
     st.write("**Top categories with highest sales per category**")
@@ -241,6 +247,7 @@ def main():
     with cat_rev_rank_chart_tab:
         cat_rev_rank_chart = altair_chart(category_rev_ranking, "Product Category", "Sell Price")
         st.altair_chart(cat_rev_rank_chart, use_container_width=True)
+
 
 if __name__ == "__main__":
     main()
