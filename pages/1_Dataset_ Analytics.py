@@ -4,6 +4,25 @@ import altair as alt
 import os
 from utils import total_analytics, top_analytics, altair_chart
 
+
+def process_data(selected_products, product_sales_dataset, time_interval, date_range):
+    processed_datasets = []
+    for product in selected_products:
+        resampled_data = product_sales_dataset[product_sales_dataset["Product Name"] == product].resample(time_interval).sum().fillna(0)
+        resampled_data = resampled_data.drop("Product Category", axis=1)
+        resampled_data["Product Name"] = product
+        
+        expanded_data = pd.DataFrame(data=date_range, columns=["Date Sold"])
+        expanded_data = expanded_data.merge(resampled_data, on="Date Sold", how="left").fillna(0)
+        expanded_data["Product Name"] = product
+        
+        processed_datasets.append(expanded_data)
+    
+    processed_dataset = pd.concat(processed_datasets)
+
+    return processed_dataset
+
+
 # Set page title and icon
 st.set_page_config(
     page_title="Dataset Analytics",
@@ -37,83 +56,49 @@ cat_rank_con = st.container()
 with sales_trend_con:
     st.subheader("Product Sales Trend Over Time")
 
-    # Get unique product names from the dataset
+    # Setup Multiselect box to choose products
     product_names = sorted(preprocessed_dataset["Product Name"].unique())
-
     preselected_products = ["Biogesic 500mg", "Bioflu 10mg/2mg/500mg", "Cetirizine 10mg", "Losartan 50mg"]
-
-    # Multiselect box to choose products
     selected_products = st.multiselect("Select products", product_names, default=preselected_products, max_selections=5)
 
     # Radio buttons to choose the time interval
     time_interval = st.radio("Select Time Interval", ["Daily", "Weekly", "Monthly"])
 
-    # Filter the dataset for the selected products
-    product_sales_dataset = preprocessed_dataset[preprocessed_dataset["Product Name"].isin(selected_products)]
+    if time_interval == "Daily":
+        time_interval = "D"
+    elif time_interval == "Weekly":
+        time_interval = "W-MON"
+    elif time_interval == "Monthly":
+        time_interval = "M"
 
     # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
     min_date = pd.Timestamp(preprocessed_dataset.index.min().date().replace(day=1))
-    max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)
+    max_date = preprocessed_dataset.index.max().date() + pd.offsets.MonthEnd(0)    
+    date_range = pd.date_range(start=min_date, end=max_date, freq=time_interval)
 
-    # Resample the DataFrame based on the selected time interval
-    resampled_datasets = []
-    for product in selected_products:
-        if time_interval == "Daily":
-            resampled_data = product_sales_dataset[product_sales_dataset["Product Name"] == product].resample("D").sum().fillna(0)
-            date_range = pd.date_range(start=min_date, end=max_date, freq="D")
-        elif time_interval == "Weekly":
-            resampled_data = product_sales_dataset[product_sales_dataset["Product Name"] == product].resample("W-MON").sum().fillna(0)
-            date_range = pd.date_range(start=min_date, end=max_date, freq="W-MON")
-        elif time_interval == "Monthly":
-            resampled_data = product_sales_dataset[product_sales_dataset["Product Name"] == product].resample("M").sum().fillna(0)
-            date_range = pd.date_range(start=min_date, end=max_date, freq="M")
-        resampled_data = resampled_data.drop("Product Category", axis=1)  # Remove the "Product Categories" column
-        resampled_data["Product Name"] = product  # Add a column with the product name
-        resampled_datasets.append(resampled_data)
+    # Filter the dataset for the selected products
+    product_sales_dataset = preprocessed_dataset[preprocessed_dataset["Product Name"].isin(selected_products)]
 
-    if len(resampled_datasets) > 0:
-        # Concatenate the resampled datasets
-        combined_dataset = pd.concat(resampled_datasets)
+    if len(selected_products) > 0:
+        processed_dataset = process_data(selected_products, product_sales_dataset, time_interval, date_range)
 
-        # Sort the combined dataset by date in ascending order
-        combined_dataset = combined_dataset.sort_index().reset_index()
-
-        # Expand the combined dataset to include all dates in the range
-        expanded_datasets = []
-        for product in selected_products:
-            product_data = combined_dataset[combined_dataset["Product Name"] == product]
-            expanded_data = pd.DataFrame(data=date_range, columns=["Date Sold"])
-            expanded_data = expanded_data.merge(product_data, on="Date Sold", how="left").fillna(0)
-            expanded_data["Product Name"] = product
-            expanded_datasets.append(expanded_data)
-
-        expanded_dataset = pd.concat(expanded_datasets)
-
-        # Line chart of sales for the selected products
-        chart = alt.Chart(expanded_dataset).mark_line().encode(
+        sales_trend_chart = alt.Chart(processed_dataset).mark_line().encode(
             x=alt.X("Date Sold:T", axis=alt.Axis(format="%b %d, %Y")),  # Format x-axis to display month, day, year
             y="Quantity:Q",
             color="Product Name:N",
             tooltip=["Date Sold:T", "Product Name:N", "Quantity:Q"]  # Include date, product name, and quantity in tooltip
-        ).properties(
-            title={
-                "text": "Product Sales Trend Over Time",
-                "align": "center"
-            }
         )
+        
+        st.altair_chart(sales_trend_chart, use_container_width=True)
 
-        # Render the chart using st.altair_chart
-        st.altair_chart(chart, use_container_width=True)
-
-        with st.expander("See Extra Information"):
+        with st.expander("See More Information"):
             st.write("**Aggregated Data for Selected Products**")
             st.write(selected_products)
-            st.dataframe(expanded_dataset)
+            st.dataframe(processed_dataset)
     else:
         st.warning("No data available for the selected products.")
 
 with total_sales_con:
-    # TABS for total quantity of sales per product
     st.subheader("Total Sales Per Product")
     total_sales_data_tab, total_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -127,7 +112,6 @@ with total_sales_con:
         st.altair_chart(sales_chart, use_container_width=True)
 
 with total_rev_con:
-    # TABS for total quantity of sales per product
     st.subheader("Total Revenue Per Product")
     total_rev_data_tab, total_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -141,7 +125,6 @@ with total_rev_con:
         st.altair_chart(revenue_chart, use_container_width=True)
 
 with top_sales_con:
-    # TABS for top 30 products with highest sales
     st.subheader("Top 30 Products With Highest Sales")
     top_sales_data_tab, top_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -154,7 +137,6 @@ with top_sales_con:
         st.altair_chart(top_sales_chart, use_container_width=True)
 
 with top_rev_con:
-    # TABS for top 30 products with highest revenue
     st.subheader("Top 30 Products With Highest Revenue")
     top_rev_data_tab, top_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -178,7 +160,6 @@ with top_cat_con:
     # Filter the dataset for the selected category
     category_data = preprocessed_dataset[preprocessed_dataset["Product Category"] == selected_category]
 
-    # TABS for top 20 most sold products per category
     st.write("**Top 20 products with highest sales per category**")
     cat_sales_data_tab, cat_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -192,7 +173,6 @@ with top_cat_con:
         top_sales_cat_chart = altair_chart(top_products_sales_cat, "Product Name", "Quantity")
         st.altair_chart(top_sales_cat_chart, use_container_width=True)
 
-    # TABS for top 20 products with highest revenue per category
     st.write("**Top 20 products with highest revenue per category**")
     cat_rev_data_tab, cat_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -209,7 +189,6 @@ with top_cat_con:
 with cat_rank_con:
     st.subheader("Category Ranking")
     
-    # TABS for top categories with highest sales per category
     st.write("**Top categories with highest sales per category**")
     cat_sales_rank_data_tab, cat_sales_rank_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
@@ -222,7 +201,6 @@ with cat_rank_con:
         cat_sales_rank_chart = altair_chart(category_sales_ranking, "Product Category", "Quantity")
         st.altair_chart(cat_sales_rank_chart, use_container_width=True)
     
-    # TABS for top categories with highest revenue per category
     st.write("**Top categories with highest revenue per category**")
     cat_rev_rank_data_tab, cat_rev_rank_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
