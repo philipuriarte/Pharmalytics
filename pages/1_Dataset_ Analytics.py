@@ -157,26 +157,30 @@ def main():
         revenue_chart = altair_chart(sorted_rev_df, "Product Name", "Sell Price")
         st.altair_chart(revenue_chart, use_container_width=True)
 
+    # Calculate the top 20% of all products for sales
+    top_percentage = 0.20
+    sales_total_products = len(sales_df)
+    sales_top_products_count = round(sales_total_products * top_percentage)
 
-
-    st.subheader("Top 30 Products With Highest Sales")
+    st.subheader(f"Top {top_percentage * 100}% Products With Highest Sales")
     top_sales_data_tab, top_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
     with top_sales_data_tab:
-        top_products_sales = top_analytics(sales_df, "Quantity", 30)
+        top_products_sales = top_analytics(sales_df, "Quantity", sales_top_products_count)
         st.dataframe(top_products_sales)
 
     with top_sales_chart_tab:
         top_sales_chart = altair_chart(top_products_sales, "Product Name", "Quantity")
         st.altair_chart(top_sales_chart, use_container_width=True)
 
+    rev_total_products = len(revenue_df)
+    rev_top_products_count = round(rev_total_products * top_percentage)
 
-
-    st.subheader("Top 30 Products With Highest Revenue")
+    st.subheader(f"Top {top_percentage * 100}% Products With Highest Revenue")
     top_rev_data_tab, top_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
     with top_rev_data_tab:
-        top_products_rev = top_analytics(revenue_df, "Sell Price", 30)
+        top_products_rev = top_analytics(revenue_df, "Sell Price", rev_top_products_count)
         st.dataframe(top_products_rev)
 
     with top_rev_chart_tab:

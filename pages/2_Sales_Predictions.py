@@ -56,10 +56,15 @@ if not os.path.exists(preprocessed_dataset_path):
 preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date Sold"], index_col="Date Sold")
 
 # Create containers to group codes together
-top_30_products_pred_con = st.container()
+top_products_pred_con = st.container()
 
-# Get the top 30 most sold products
-top_30_products = preprocessed_dataset.groupby("Product Name")["Quantity"].sum().nlargest(30).index
+# Calculate the top 10% most sold products
+top_percentage = 0.10  # You can adjust this value as needed
+total_products = len(preprocessed_dataset["Product Name"].unique())
+top_products_count = round(total_products * top_percentage)
+
+# Get the top 10% most sold products
+top_products = preprocessed_dataset.groupby("Product Name")["Quantity"].sum().nlargest(top_products_count).index
 
 # Get the minimum and maximum dates from the filtered dataset and set to beginning and end of the months respectively
 min_date = pd.Timestamp(preprocessed_dataset.index.min().date())
@@ -72,7 +77,7 @@ time_interval = "W-MON"
 date_range = pd.date_range(start=min_date, end=max_date, freq=time_interval)
 
 # Get unique product names from top_30_products
-unique_product_names = top_30_products.unique().tolist()
+unique_product_names = top_products.unique().tolist()
 
 predict_time_intervals = ["1 Week", "2 Weeks", "3 weeks", "1 Month"]
 
@@ -82,7 +87,7 @@ with st.sidebar:
     predict_interval = st.select_slider("Select how far into the future to predict", predict_time_intervals)
     generate_button = st.button("Generate", help="Click to generate sales predictions")
 
-with top_30_products_pred_con:
+with top_products_pred_con:
     if generate_button is not True:
         st.stop()
     
