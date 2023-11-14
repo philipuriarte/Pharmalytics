@@ -24,6 +24,10 @@ def preprocess_dataset(dataset: pd.DataFrame) -> pd.DataFrame:
     preprocessed_dataset["Date Sold"] = pd.to_datetime(preprocessed_dataset["Date Sold"], format="%m/%d/%Y")
     preprocessed_dataset = preprocessed_dataset.set_index("Date Sold")
 
+    # Convert "Sell Price" column to numeric and then round to zero decimal places
+    preprocessed_dataset["Sell Price"] = pd.to_numeric(preprocessed_dataset["Sell Price"], errors="coerce")
+    preprocessed_dataset["Sell Price"] = preprocessed_dataset["Sell Price"].round(0)
+
     return preprocessed_dataset
 
 
