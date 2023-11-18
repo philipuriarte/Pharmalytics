@@ -202,6 +202,13 @@ with top_products_pred_con:
             st.write("**Product Sales Aggregated Dataset**")
             st.write(product_to_predict)
             st.dataframe(pred_resampled_data)
+
+            # Perform Dickey-Fuller test for stationarity
+            result = adfuller(pred_resampled_data['Quantity'])
+            st.write("**Dickey-Fuller Test Results**")
+            st.write(f"ADF Statistic: {result[0]}")
+            st.write(f"p-value: {result[1]}")
+            st.write(f"Critical Values: {result[4]}")
             
             # Perform ACF and PACF analysis
             fig, ax = plt.subplots(2, 1, figsize=(10, 8))
