@@ -91,9 +91,17 @@ with top_products_pred_con:
         pred_resampled_data = pred_product_data.drop(["Product Name", "Sell Price", "Product Category"], axis=1).resample(time_interval).sum().reindex(date_range, fill_value=0).reset_index()
         pred_resampled_data = pred_resampled_data.set_index("index")
 
+        # Remove outliers using the IQR method
+        Q1 = pred_resampled_data['Quantity'].quantile(0.25)
+        Q3 = pred_resampled_data['Quantity'].quantile(0.75)
+        IQR = Q3 - Q1
+
+        pred_processed_data = pred_resampled_data[~((pred_resampled_data['Quantity'] < (Q1 - 1.5 * IQR)) | (pred_resampled_data['Quantity'] > (Q3 + 1.5 * IQR)))]
+
 
         # Prophet expects a specific format for the input DataFrame
-        pred_resampled_data_prophet = pred_resampled_data.reset_index().rename(columns={"index": "ds", "Quantity": "y"})
+        pred_resampled_data_prophet = pred_processed_data.reset_index().rename(columns={"index": "ds", "Quantity": "y"})        
+        pred_resampled_data_prophet2 = pred_resampled_data.reset_index().rename(columns={"index": "ds", "Quantity": "y"})
 
         # Instantiate the Prophet model
         model = Prophet(
@@ -104,27 +112,43 @@ with top_products_pred_con:
             changepoint_prior_scale=0.05,  # Experiment with different values
             holidays_prior_scale=10.0,  # Experiment with different values
         )
+
+        model2 = Prophet(
+            yearly_seasonality=True,
+            weekly_seasonality=True,
+            daily_seasonality=False,  # Adjust as needed based on your data
+            seasonality_prior_scale=10.0,  # Experiment with different values
+            changepoint_prior_scale=0.05,  # Experiment with different values
+            holidays_prior_scale=10.0,  # Experiment with different values
+        )
         
         # Fit the model to the entire resampled data
         model_fit = model.fit(pred_resampled_data_prophet)
+        model_fit2 = model2.fit(pred_resampled_data_prophet2)
 
         # Create a DataFrame with the future dates for prediction
-        future = model.make_future_dataframe(periods=16, freq="W-MON")
+        future = model.make_future_dataframe(periods=12, freq=time_interval)
+        future2 = model2.make_future_dataframe(periods=12, freq=time_interval)
 
         # Generate predictions on the future dates
         forecast = model.predict(future)
+        forecast2 = model2.predict(future2)
 
         # Extract predictions
         predictions = forecast[['ds', 'yhat']]
         predictions['ds'] = pd.to_datetime(predictions['ds'])
         predictions = predictions.set_index('ds')
+        
+        predictions2 = forecast2[['ds', 'yhat']]
+        predictions2['ds'] = pd.to_datetime(predictions2['ds'])
+        predictions2 = predictions2.set_index('ds')
 
         st.subheader(product_to_predict + " Sales Predictions")
-        act_pred_tab, final_app_tab = st.tabs(["📒 Actual vs Predicted", "📊 Final App"])
+        no_outlier, with_outlier = st.tabs(["Without Outliers", "With Outliers"])
 
         col1, col2 = st.columns(2)
 
-        with act_pred_tab:
+        with no_outlier:
             data = pd.concat([pred_resampled_data['Quantity'].rename('Actual'), predictions['yhat'].rename('Predicted')], axis=1).reset_index()
 
             chart = alt.Chart(data).mark_line().encode(
@@ -142,6 +166,25 @@ with top_products_pred_con:
             )
 
             st.altair_chart(chart)
+        
+        with with_outlier:
+            data2 = pd.concat([pred_resampled_data['Quantity'].rename('Actual'), predictions2['yhat'].rename('Predicted')], axis=1).reset_index()
+
+            chart2 = alt.Chart(data2).mark_line().encode(
+                x='index:T',
+                y=alt.Y('value:Q', axis=alt.Axis(title='Quantity')),
+                color=alt.Color('data:N', scale=alt.Scale(domain=['Actual', 'Predicted'], range=['steelblue', 'orange'])),
+                tooltip=['index:T', 'value:Q', 'data:N']
+            ).transform_fold(
+                fold=['Actual', 'Predicted'],
+                as_=['data', 'value']
+            ).properties(
+                title="Actual vs Predicted",
+                width=600,
+                height=400
+            )
+
+            st.altair_chart(chart2)
         
         # Take the intersection of dates
         common_dates = pred_resampled_data.index.intersection(predictions.index)
