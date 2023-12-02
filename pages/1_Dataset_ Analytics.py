@@ -157,8 +157,8 @@ def main():
         revenue_chart = altair_chart(sorted_rev_df, "Product Name", "Sell Price")
         st.altair_chart(revenue_chart, use_container_width=True)
 
-    # Calculate the top 20% of all products for sales
-    top_percentage = 0.20
+    # Calculate the top 10% of all products for sales
+    top_percentage = 0.10
     sales_total_products = len(sales_df)
     sales_top_products_count = round(sales_total_products * top_percentage)
 
@@ -198,7 +198,7 @@ def main():
     # Filter the dataset for the selected category
     category_data = preprocessed_dataset[preprocessed_dataset["Product Category"] == selected_category]
 
-    st.write("**Top 20 products with highest sales per category**")
+    st.write("**Top 10 products with highest sales per category**")
     cat_sales_data_tab, cat_sales_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
     with cat_sales_data_tab:
@@ -211,7 +211,7 @@ def main():
         top_sales_cat_chart = altair_chart(top_products_sales_cat, "Product Name", "Quantity")
         st.altair_chart(top_sales_cat_chart, use_container_width=True)
 
-    st.write("**Top 20 products with highest revenue per category**")
+    st.write("**Top 10 products with highest revenue per category**")
     cat_rev_data_tab, cat_rev_chart_tab = st.tabs(["📒 Data", "📊 Bar Chart"])
 
     with cat_rev_data_tab:
