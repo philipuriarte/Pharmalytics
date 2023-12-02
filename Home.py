@@ -40,18 +40,17 @@ def main():
     st.title("Welcome to Pharmalytics!")
     st.markdown(
         """
-        Pharmalytics is a sales prediction system developed for FirstMed Pharmacy using the **SARIMA** model.
+        Pharmalytics is a sales prediction system developed for FirstMed Pharmacy using the **Prophet** model.
         ### Instructions
         1. Upload the pharmacy sales dataset below.
             - Requirements: CSV file format, Column Headers [Product Name (string), Quantity (int), Sell Price (int), 
             Date Sold (datetime: dd-mm-yyyy), Product Category (string)]
-        2.  👈 Select Analytics or Predictions from the sidebar
-            - To gain insights into the dataset, click on the "Analytics" option. 
+        2.  👈 Select Dataset Analytics or Sales Predictions from the sidebar
+            - To gain insights into the dataset, click on the "Dataset Analytics" option. 
             This will provide you with a comprehensive overview and analysis of the sales data, 
-            including key statistics, trends, and visualizations.
+            including key statistics and visualizations.
             - To generate sales predictions, click on "Predictions" option.
-            Pharmalytics will employ the SARIMA (Seasonal Autoregressive Integrated Moving Average) model 
-            to generate sales predictions based on the uploaded dataset.
+            Pharmalytics will employ the Prophet model to generate sales predictions based on the uploaded dataset.
     """
     )
     
