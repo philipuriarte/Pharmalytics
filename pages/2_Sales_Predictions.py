@@ -55,7 +55,7 @@ preprocessed_dataset = pd.read_csv(preprocessed_dataset_path, parse_dates=["Date
 top_products_pred_con = st.container()
 
 # Calculate the top 10% most sold products
-top_percentage = 0.10  # You can adjust this value as needed
+top_percentage = 0.10
 total_products = len(preprocessed_dataset["Product Name"].unique())
 top_products_count = round(total_products * top_percentage)
 
@@ -92,8 +92,8 @@ with top_products_pred_con:
         pred_resampled_data = pred_resampled_data.set_index("index")
 
         # Remove outliers using the IQR method
-        Q1 = pred_resampled_data['Quantity'].quantile(0.25)
-        Q3 = pred_resampled_data['Quantity'].quantile(0.75)
+        Q1 = pred_resampled_data['Quantity'].quantile(0.05)
+        Q3 = pred_resampled_data['Quantity'].quantile(0.80)
         IQR = Q3 - Q1
 
         pred_processed_data = pred_resampled_data[~((pred_resampled_data['Quantity'] < (Q1 - 1.5 * IQR)) | (pred_resampled_data['Quantity'] > (Q3 + 1.5 * IQR)))]
@@ -123,8 +123,8 @@ with top_products_pred_con:
         )
         
         # Fit the model to the entire resampled data
-        model_fit = model.fit(pred_resampled_data_prophet)
-        model_fit2 = model2.fit(pred_resampled_data_prophet2)
+        model = model.fit(pred_resampled_data_prophet)
+        model2 = model2.fit(pred_resampled_data_prophet2)
 
         # Create a DataFrame with the future dates for prediction
         future = model.make_future_dataframe(periods=12, freq=time_interval)
@@ -185,7 +185,7 @@ with top_products_pred_con:
             )
 
             st.altair_chart(chart2)
-        
+              
         # Take the intersection of dates
         common_dates = pred_resampled_data.index.intersection(predictions.index)
 
