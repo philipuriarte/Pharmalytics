@@ -7,6 +7,28 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from prophet import Prophet
 
+
+# Function to create line plot visualization
+def altair_chart(actual, pred, product_name):
+    data = pd.concat([actual['Quantity'].rename('Actual'), pred['yhat'].rename('Predicted')], axis=1).reset_index()
+
+    chart = alt.Chart(data).mark_line().encode(
+        x='index:T',
+        y=alt.Y('value:Q', axis=alt.Axis(title='Quantity')),
+        color=alt.Color('data:N', scale=alt.Scale(domain=['Actual', 'Predicted'], range=['steelblue', 'orange'])),
+        tooltip=['index:T', 'value:Q', 'data:N']
+    ).transform_fold(
+        fold=['Actual', 'Predicted'],
+        as_=['data', 'value']
+    ).properties(
+        title=f"{product_name} Actual vs Predicted",
+        width=600,
+        height=400
+    )
+
+    return chart
+
+
 # Set page title and icon
 st.set_page_config(
     page_title="Prophet Sales Predictions",
@@ -80,7 +102,7 @@ generate_button = st.button("Generate", help="Click to generate sales prediction
 if generate_button is not True:
     st.stop()
     
-with st.spinner('Processing...'):
+with st.spinner('Processing Predictions...'):
     for product in unique_product_names:
         # Get the data for product
         pred_product_data = preprocessed_dataset[preprocessed_dataset["Product Name"] == product]
@@ -157,4 +179,17 @@ with st.spinner('Processing...'):
     st.dataframe(predictions_df)
 
 
+# Create all visualizations
+with st.spinner('Processing Visualizations...'):
+    st.subheader("Sales Prediction Visualization")
+    
+    i = 1
+    for product in unique_product_names:
+        actual = product_data[product]['actual']
+        pred = product_data[product]['predicted']
 
+        product = f"{i}. {product}"
+        i += 1
+
+        chart = altair_chart(actual, pred, product)
+        st.altair_chart(chart)
