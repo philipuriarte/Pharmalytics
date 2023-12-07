@@ -187,8 +187,7 @@ with st.spinner('Processing Predictions...'):
     st.dataframe(predictions_df)
 
 
-# Create all visualizations
-with st.spinner('Processing Visualizations...'):
+    # Create all visualizations
     st.subheader("Sales Prediction Visualization")
     
     i = 1
