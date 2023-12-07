@@ -31,12 +31,12 @@ def altair_chart(actual, pred, product_name):
 
 # Set page title and icon
 st.set_page_config(
-    page_title="Bulk Forecasting",
+    page_title="Sales Predictions",
     page_icon="💰",
 )
 
 # Main content
-st.title("Bulk Forecasting 💰")
+st.title("Sales Predictions 💰")
 st.markdown(
     """
     Pharmalytics uses the Prophet model to generate sales predictions based on your uploaded dataset. 
