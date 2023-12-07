@@ -44,20 +44,14 @@ st.markdown(
 
     To ensure efficiency and practicality, our app focuses on predicting sales for the top 10% most sold products 
     in FirstMed Pharmacy and leverages the power of the Prophet model for predicting sales.
-"""
-)
-descrip_exp = st.expander("See Extra Information")
-descrip_exp.markdown(
-    """
-    The model aggregates sales data on a weekly basis and predictions are made for the 
-    next 12 weeks beyond the latest date in the dataset.
-
+    
     The top 10% most sold products are prioritized for predictions because they have a larger dataset, allowing for 
     more accurate forecasts, and their sales have a greater impact on overall revenue compared to products outside 
     the top 10% where the aggregated datasets are smaller, leading to less accurate predictions due to the limited 
     historical sales information.
 """
 )
+
 
 st.sidebar.header("Sales Predictions")
 
@@ -176,7 +170,7 @@ with st.spinner('Processing Predictions...'):
     future_dates = forecast[forecast['ds'] > pred_resampled_data.index.max()]['ds'].dt.date.tolist()
 
     # Rename columns
-    predictions_df.rename(columns={0: "Products", 1: "MAPE"}, inplace=True)
+    predictions_df.rename(columns={0: "Products", 1: "MAE"}, inplace=True)
     predictions_df.rename(columns={i: future_dates[i - 2] for i in range(2, len(future_dates) + 2)}, inplace=True)
     predictions_df.index += 1
 
@@ -184,6 +178,15 @@ with st.spinner('Processing Predictions...'):
     predictions_df['Total'] = predictions_df.iloc[:, 2:].sum(axis=1)
 
     st.subheader("Sales Predictions for Top 10% Products")
+    descrip_exp = st.expander("See Extra Information")
+    descrip_exp.markdown(
+        """
+        Sales predictions are computed on a weekly basis, forecasting the next 12 weeks 
+        beyond the latest date in the dataset. Model accuracy is assessed using Mean 
+        Absolute Error (MAE), and the products are ranked based on sales performance. 
+        The 'Total' column reflects the cumulative predicted sales for the upcoming 12 weeks.
+    """
+    )
     st.dataframe(predictions_df)
 
 
