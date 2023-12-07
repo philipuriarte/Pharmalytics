@@ -152,16 +152,23 @@ with st.spinner('Processing Predictions...'):
 
         product_data[product] = {'actual':pred_resampled_data, 'predicted':predictions}
 
+        # Take the intersection of dates
+        common_dates = pred_resampled_data.index.intersection(predictions.index)
+
+        # Calculate Mean Absolute Error (MAE) using common dates
+        mape = mean_absolute_error(pred_resampled_data.loc[common_dates, 'Quantity'], predictions.loc[common_dates, 'yhat'])
+
         # Create list for product predictions
         product_predictions = []
         product_predictions.append(product)
+        product_predictions.append(mape)
 
         for pred in future_predictions:
             product_predictions.append(pred)
         
         # Append the list to the matrix
         product_predictions_matrix.append(product_predictions)
-
+        
     # Convert matrix to dataframe
     predictions_df = pd.DataFrame(product_predictions_matrix)
 
@@ -169,12 +176,12 @@ with st.spinner('Processing Predictions...'):
     future_dates = forecast[forecast['ds'] > pred_resampled_data.index.max()]['ds'].dt.date.tolist()
 
     # Rename columns
-    predictions_df.rename(columns={i: future_dates[i - 1] for i in range(1, len(future_dates) + 1)}, inplace=True)
-    predictions_df.rename(columns={0: "Products"}, inplace=True)
+    predictions_df.rename(columns={0: "Products", 1: "MAPE"}, inplace=True)
+    predictions_df.rename(columns={i: future_dates[i - 2] for i in range(2, len(future_dates) + 2)}, inplace=True)
     predictions_df.index += 1
 
     # Add a new column containing the sum of each row
-    predictions_df['Total'] = predictions_df.iloc[:, 1:].sum(axis=1)
+    predictions_df['Total'] = predictions_df.iloc[:, 2:].sum(axis=1)
 
     st.subheader("Sales Predictions for Top 10% Products")
     st.dataframe(predictions_df)
