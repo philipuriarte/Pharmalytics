@@ -45,15 +45,12 @@ def main():
         1. Upload the pharmacy sales dataset below.
             - Requirements: CSV file format, Column Headers [Product Name (string), Quantity (int), Sell Price (int), 
             Date Sold (datetime: dd-mm-yyyy), Product Category (string)]
-        2.  👈 Select Dataset Analytics or Forecasting from the sidebar
-            - To gain insights into the dataset, click on the "Dataset Analytics" option. 
+        2.  👈 Select Analytics or Sales Predictions from the sidebar
+            - To gain insights into the dataset, click on the "Analytics" option. 
             This will provide you with a comprehensive overview and analysis of the sales data, 
-            including key statistics and visualizations.
-            - For individual product forecasting, choose the "Individual Forecasting" option.
-              Here, you can select a specific product to generate predictions.
-            - For bulk forecasting of the top 10% products, choose the "Bulk Forecasting" option.
-              Note that generating predictions for all top products may take longer to process.
-            Pharmalytics will employ the Prophet model to generate sales predictions based on the uploaded dataset.
+            including key statistics, trends, and visualizations.
+            - To generate sales predictions, click on "Predictions" option. Pharmalytics will employ the Prophet model 
+            to generate sales predictions based on the uploaded dataset.
     """
     )
     
