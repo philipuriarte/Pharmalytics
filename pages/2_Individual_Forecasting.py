@@ -9,30 +9,28 @@ from prophet import Prophet
 
 # Set page title and icon
 st.set_page_config(
-    page_title="Prophet Sales Predictions",
+    page_title="Individual Forecasting",
     page_icon="💰",
 )
 
 # Main content
-st.title("Prophet Sales Predictions 💰")
+st.title("Individual Forecasting 💰")
 st.markdown(
     """
     Pharmalytics uses the Prophet model to generate sales predictions based on your uploaded dataset. 
     This advanced technique captures seasonal and trend patterns in the data to forecast future trends.
 
-    👈 Select a product to predict and how far into the future to predict from the sidebar.
+    To ensure efficiency and practicality, our app focuses on predicting sales for the top 10% most sold products 
+    in FirstMed Pharmacy and leverages the power of the Prophet model for predicting sales.
+
+    👈 Select a product to predict from the sidebar.
 """
 )
 descrip_exp = st.expander("See Extra Information")
 descrip_exp.markdown(
     """
-    To ensure efficiency and practicality, our app focuses on predicting sales for the top 10% most sold products 
-    in FirstMed Pharmacy and leverages the power of the Prophet model for predicting sales. By automating the model 
-    fitting process, we eliminate the need for manual selection and comparison of different models.
-    
-    This streamlined approach enables us to provide forecasts for the key items driving the pharmacy's revenue and 
-    saves time and resources, allowing us to focus on delivering reliable sales predictions while leaving 
-    room for future expansion and inclusion of additional products.
+    The model aggregates sales data on a weekly basis and predictions are made for the 
+    next 12 weeks beyond the latest date in the dataset.
 
     The top 10% most sold products are prioritized for predictions because they have a larger dataset, allowing for 
     more accurate forecasts, and their sales have a greater impact on overall revenue compared to products outside 
