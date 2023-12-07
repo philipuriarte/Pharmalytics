@@ -192,9 +192,6 @@ with top_products_pred_con:
         # Calculate Mean Absolute Error (MAE) using common dates
         mae = mean_absolute_error(pred_resampled_data.loc[common_dates, 'Quantity'], predictions.loc[common_dates, 'yhat'])
 
-        # Calculate Mean Absolute Percentage Error (MAPE) using common dates
-        mape = (mae / pred_resampled_data.loc[common_dates, 'Quantity'].mean()) * 100
-
         # Calculate R-squared (R²) using common dates
         y_true = pred_resampled_data.loc[common_dates, 'Quantity']
         y_pred = predictions.loc[common_dates, 'yhat']
@@ -205,7 +202,6 @@ with top_products_pred_con:
 
         st.write("**Accuracy Results**")
         st.write(f"Mean Absolute Error (MAE): {mae:.2f}")
-        st.write(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
         st.write(f"R-squared (R²): {r_squared:.4f}")
         st.write(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
         
