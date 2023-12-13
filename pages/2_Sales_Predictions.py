@@ -33,6 +33,7 @@ def altair_chart(actual, pred, product_name):
 st.set_page_config(
     page_title="Sales Predictions",
     page_icon="💰",
+    layout ="wide"
 )
 
 # Main content
@@ -198,8 +199,17 @@ with st.spinner('Processing Predictions...'):
         actual = product_data[product]['actual']
         pred = product_data[product]['predicted']
 
-        product = f"{i}. {product}"
+        product_name_count = f"{i}. {product}"
         i += 1
 
-        chart = altair_chart(actual, pred, product)
-        st.altair_chart(chart)
+        chart = altair_chart(actual, pred, product_name_count)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.altair_chart(chart)
+        with col2:            
+            # Display the row from predictions_df for the current product
+            product_row = predictions_df[predictions_df['Products'] == product].iloc[0]
+            product_data_frame = pd.DataFrame(product_row[2:].values, index=product_row[2:].index, columns=['Predictions'])
+            st.dataframe(product_data_frame)
