@@ -211,5 +211,6 @@ with st.spinner('Processing Predictions...'):
         with col2:            
             # Display the row from predictions_df for the current product
             product_row = predictions_df[predictions_df['Products'] == product].iloc[0]
-            product_data_frame = pd.DataFrame(product_row[2:].values, index=product_row[2:].index, columns=['Predictions'])
+            product_data_frame = pd.DataFrame(product_row[2:].values, index=product_row[2:].index, columns=['Predictions'])            
+            st.write(f"**{round(product_row['Total'])}** - Projected {product} Sales in Next 12 Weeks") # Display the 'Total' value for the current product
             st.dataframe(product_data_frame)
