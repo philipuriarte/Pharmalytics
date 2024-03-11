@@ -1,3 +1,4 @@
+from navigation import make_sidebar
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -63,13 +64,7 @@ def altair_chart(dataset: pd.DataFrame, x_label: str, y_label: str) -> alt.Chart
 
 
 def main():
-    # Set page title and icon
-    st.set_page_config(
-        page_title="Dataset Analytics",
-        page_icon="📈",
-    )
-
-    st.sidebar.header("Dataset Analytics")
+    make_sidebar()
 
     # Main content
     st.title("Dataset Analytics 📈")

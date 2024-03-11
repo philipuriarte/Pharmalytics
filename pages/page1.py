@@ -1,7 +1,7 @@
+from navigation import make_sidebar
 import streamlit as st
 import pandas as pd
 import os
-
 
 def preprocess_dataset(dataset: pd.DataFrame) -> pd.DataFrame:
     """
@@ -32,10 +32,7 @@ def preprocess_dataset(dataset: pd.DataFrame) -> pd.DataFrame:
 
 
 def main():
-    st.set_page_config(
-        page_title="Home",
-        page_icon="🏠",
-    )
+    make_sidebar()
 
     st.title("Welcome to Pharmalytics!")
     st.markdown(

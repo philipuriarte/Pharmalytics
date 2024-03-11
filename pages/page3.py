@@ -1,3 +1,4 @@
+from navigation import make_sidebar
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -28,13 +29,7 @@ def altair_chart(actual, pred, product_name):
 
     return chart
 
-
-# Set page title and icon
-st.set_page_config(
-    page_title="Sales Predictions",
-    page_icon="💰",
-    layout ="wide"
-)
+make_sidebar()
 
 # Main content
 st.title("Sales Predictions 💰")
@@ -53,8 +48,6 @@ st.markdown(
 """
 )
 
-
-st.sidebar.header("Sales Predictions")
 
 # Load the preprocessed dataset and stop if it doesn't exist
 preprocessed_dataset_path = "preprocessed_dataset.csv"
