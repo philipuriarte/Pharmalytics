@@ -23,7 +23,8 @@ def make_sidebar():
         if st.session_state.get("logged_in", False):
             st.page_link("pages/page1.py", label="Home", icon="🏠")
             st.page_link("pages/page2.py", label="Dataset Analytics", icon="📈")
-            st.page_link("pages/page3.py", label="Sales Predictions", icon="💰")
+            st.page_link("pages/page3.py", label="Grouped Forecasting", icon="💰")            
+            st.page_link("pages/page4.py", label="Single Forecasting", icon="💰")
 
             st.write("")
             st.write("")

@@ -1,3 +1,4 @@
+from navigation import make_sidebar
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,11 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from prophet import Prophet
 
-# Set page title and icon
-st.set_page_config(
-    page_title="Individual Forecasting",
-    page_icon="💰",
-)
+make_sidebar()
 
 # Main content
 st.title("Individual Forecasting 💰")
